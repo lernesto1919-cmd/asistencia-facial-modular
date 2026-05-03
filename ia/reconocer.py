@@ -1,4 +1,6 @@
 import cv2
+import sqlite3
+from datetime import datetime
 
 # Cargar detector de rostros
 detector_rostro = cv2.CascadeClassifier(
@@ -8,6 +10,13 @@ detector_rostro = cv2.CascadeClassifier(
 # Cargar modelo entrenado
 modelo = cv2.face.LBPHFaceRecognizer_create()
 modelo.read("ia/modelo_lbph.xml")
+conexion = sqlite3.connect(
+    "database/asistencia.db"
+)
+
+cursor = conexion.cursor()
+
+registrados = set()
 
 # Nombres registrados
 personas = [
@@ -54,9 +63,27 @@ while True:
 
         if confianza < 80:
 
-            nombre = personas[
-                etiqueta
-            ]
+            nombre = personas[etiqueta]
+            if nombre not in registrados:
+                ahora = datetime.now()
+                fecha = ahora.strftime("%Y-%m-%d")
+                hora = ahora.strftime("%H:%M:%S")
+                cursor.execute(
+                    """
+                    INSERT INTO asistencias
+                    (alumno, fecha, hora)
+                    VALUES (?, ?, ?)
+                    """,
+                    (nombre, fecha, hora)
+                )
+                conexion.commit()
+
+                registrados.add(nombre)
+
+                print(
+                    f"Asistencia registrada: {nombre}"
+                )
+
 
         else:
 
@@ -92,3 +119,4 @@ while True:
 
 camara.release()
 cv2.destroyAllWindows()
+conexion.close()
