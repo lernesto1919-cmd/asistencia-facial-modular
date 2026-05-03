@@ -1,3 +1,4 @@
+import requests
 import cv2
 import sqlite3
 from datetime import datetime
