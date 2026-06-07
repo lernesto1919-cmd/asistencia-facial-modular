@@ -85,6 +85,18 @@ while True:
                     f"Asistencia registrada: {nombre}"
                 )
 
+                respuesta = requests.post(
+                    "https://asistencia-facial-modular.onrender.com/registrar",
+                    json={
+                        "alumno": nombre
+                    }
+                )
+
+                print(
+                    "Servidor nube:",
+                    respuesta.json()
+                )
+
 
         else:
 
