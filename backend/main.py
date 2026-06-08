@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from backend.routes import grupos
 from backend.models.grupos import crear_tabla_grupos
+from backend.routes import asistencia_activa
 
 from backend.database import conectar
 from backend.routes import alumnos
@@ -26,6 +27,7 @@ crear_tabla_grupos()
 
 app.include_router(alumnos.router)
 app.include_router(grupos.router)
+app.include_router(asistencia_activa.router)
 
 class Asistencia(BaseModel):
     alumno: str

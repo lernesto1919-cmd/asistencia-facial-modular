@@ -11,6 +11,9 @@ function App() {
   const [asistencias, setAsistencias] = useState([]);
   const [grupos, setGrupos] = useState([]);
 
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState("");
+  const [mensajeAsistencia, setMensajeAsistencia] = useState("");
+
   const [formulario, setFormulario] = useState({
     nombre: "",
     matricula: "",
@@ -89,6 +92,26 @@ function App() {
         });
 
         cargarDatos();
+      });
+  };
+
+  const iniciarAsistencia = (e) => {
+    e.preventDefault();
+
+    fetch("http://127.0.0.1:8000/iniciar-asistencia", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        grupo_id: Number(grupoSeleccionado)
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        setMensajeAsistencia(
+          `Asistencia iniciada para grupo ${data.grupo_id}`
+        );
       });
   };
 
@@ -236,6 +259,29 @@ function App() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="seccion">
+        <h2>Tomar asistencia</h2>
+
+        <form className="formulario" onSubmit={iniciarAsistencia}>
+          <select
+            value={grupoSeleccionado}
+            onChange={(e) => setGrupoSeleccionado(e.target.value)}
+          >
+            <option value="">Selecciona un grupo</option>
+
+            {grupos.map(grupo => (
+              <option key={grupo.id} value={grupo.id}>
+                {grupo.nombre}
+              </option>
+            ))}
+          </select>
+
+          <button type="submit">Iniciar asistencia</button>
+        </form>
+
+        <p>{mensajeAsistencia}</p>
       </div>
 
       <div className="seccion">
