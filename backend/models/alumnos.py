@@ -9,9 +9,16 @@ def crear_tabla_alumnos():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
             matricula TEXT NOT NULL,
-            grupo TEXT NOT NULL
+            grupo TEXT,
+            grupo_id INTEGER,
+            FOREIGN KEY(grupo_id) REFERENCES grupos(id)
         )
     """)
+
+    try:
+        cursor.execute("ALTER TABLE alumnos ADD COLUMN grupo_id INTEGER")
+    except:
+        pass
 
     conexion.commit()
     conexion.close()
