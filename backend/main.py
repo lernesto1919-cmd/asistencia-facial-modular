@@ -1,6 +1,9 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from pydantic import BaseModel
 from datetime import datetime
+from backend.routes import grupos
+from backend.models.grupos import crear_tabla_grupos
 
 from backend.database import conectar
 from backend.routes import alumnos
@@ -9,10 +12,20 @@ from backend.models.asistencias import crear_tabla_asistencias
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 crear_tabla_alumnos()
 crear_tabla_asistencias()
+crear_tabla_grupos()
 
 app.include_router(alumnos.router)
+app.include_router(grupos.router)
 
 class Asistencia(BaseModel):
     alumno: str
