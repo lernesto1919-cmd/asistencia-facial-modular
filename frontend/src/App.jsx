@@ -14,6 +14,12 @@ function App() {
   const [grupoSeleccionado, setGrupoSeleccionado] = useState("");
   const [mensajeAsistencia, setMensajeAsistencia] = useState("");
 
+  const [grupoActivo, setGrupoActivo] = useState(null);
+  const [nombreGrupoActivo, setNombreGrupoActivo] = useState("");  
+
+  const [asistenciasGrupo, setAsistenciasGrupo] = useState([]);
+  const [grupoConsulta, setGrupoConsulta] = useState("");
+
   const [formulario, setFormulario] = useState({
     nombre: "",
     matricula: "",
@@ -42,7 +48,25 @@ function App() {
     fetch("http://127.0.0.1:8000/grupos")
       .then(response => response.json())
       .then(data => setGrupos(data));
+    
+    fetch("http://127.0.0.1:8000/grupo-activo")
+      .then(response => response.json())
+      .then(data => {
+        setGrupoActivo(data.grupo_id);
+
+        const grupoEncontrado = grupos.find(
+          grupo => grupo.id === data.grupo_id
+        );
+
+        if (grupoEncontrado) {
+          setNombreGrupoActivo(grupoEncontrado.nombre);
+        } else {
+          setNombreGrupoActivo("");
+        }
+      });
   };
+
+
 
   useEffect(() => {
     cargarDatos();
@@ -109,10 +133,12 @@ function App() {
     })
       .then(response => response.json())
       .then(data => {
-        setMensajeAsistencia(
-          `Asistencia iniciada para grupo ${data.grupo_id}`
-        );
-      });
+    setMensajeAsistencia(
+      `Asistencia iniciada para grupo ${data.grupo_id}`
+    );
+
+    cargarDatos();
+  });
   };
   
   const finalizarAsistencia = () => {
@@ -124,9 +150,26 @@ function App() {
     .then(data => {
       setMensajeAsistencia(data.mensaje);
       setGrupoSeleccionado("");
+
+      cargarDatos();
     });
 
   };
+
+  const consultarAsistenciasGrupo = () => {
+
+    if (!grupoConsulta) return;
+
+    fetch(
+      `http://127.0.0.1:8000/grupos/${grupoConsulta}/asistencias`
+    )
+     .then(response => response.json())
+      .then(data => {
+        setAsistenciasGrupo(data);
+     });
+
+  };
+
 
   return (
     <div className="contenedor">
@@ -273,6 +316,23 @@ function App() {
           </tbody>
         </table>
       </div>
+      <div className="seccion">
+        <h2>Estado de asistencia</h2>
+
+        {grupoActivo ? (
+         <p>
+           🟢 Asistencia activa para el grupo:
+          {" "}
+           <strong>
+             {nombreGrupoActivo || grupoActivo}
+           </strong>
+         </p>
+        ) : (
+         <p>
+           🔴 No hay asistencia activa
+         </p>
+        )}
+      </div>
 
       <div className="seccion">
         <h2>Tomar asistencia</h2>
@@ -297,6 +357,72 @@ function App() {
 
         <p>{mensajeAsistencia}</p>
       </div>
+
+      <div className="seccion">
+
+        <h2>Asistencias por grupo</h2>
+
+        <select
+          value={grupoConsulta}
+          onChange={(e) => setGrupoConsulta(e.target.value)}
+        >
+
+          <option value="">
+            Selecciona un grupo
+          </option>
+
+          {grupos.map(grupo => (
+            <option
+              key={grupo.id}
+              value={grupo.id}
+            >
+              {grupo.nombre}
+            </option>
+          ))}
+
+        </select>
+
+        <button
+          onClick={consultarAsistenciasGrupo}
+        >
+          Consultar
+        </button>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>Matrícula</th>
+              <th>Fecha</th>
+              <th>Hora</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {asistenciasGrupo.map(asistencia => (
+
+             <tr key={asistencia.id}>
+
+                <td>{asistencia.nombre}</td>
+
+               <td>{asistencia.matricula}</td>
+
+                <td>{asistencia.fecha}</td>
+
+                <td>{asistencia.hora}</td>
+
+              </tr>
+
+           ))}
+
+         </tbody>
+
+        </table>
+
+      </div>
+
+
 
       <div className="seccion">
         <h2>Historial de asistencias</h2>
