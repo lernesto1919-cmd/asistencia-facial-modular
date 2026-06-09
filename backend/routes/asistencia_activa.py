@@ -21,3 +21,12 @@ def iniciar_asistencia(data: dict):
 def obtener_grupo_activo():
 
     return grupo_activo
+
+@router.post("/finalizar-asistencia")
+def finalizar_asistencia():
+
+    grupo_activo["grupo_id"] = None
+
+    return {
+        "mensaje": "Asistencia finalizada"
+    }
