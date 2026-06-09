@@ -114,6 +114,19 @@ function App() {
         );
       });
   };
+  
+  const finalizarAsistencia = () => {
+
+  fetch("http://127.0.0.1:8000/finalizar-asistencia", {
+    method: "POST"
+    })
+    .then(response => response.json())
+    .then(data => {
+      setMensajeAsistencia(data.mensaje);
+      setGrupoSeleccionado("");
+    });
+
+  };
 
   return (
     <div className="contenedor">
@@ -279,6 +292,7 @@ function App() {
           </select>
 
           <button type="submit">Iniciar asistencia</button>
+          <button type="button" onClick={finalizarAsistencia}>Finalizar asistencia</button>
         </form>
 
         <p>{mensajeAsistencia}</p>
