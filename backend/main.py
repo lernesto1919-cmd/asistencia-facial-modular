@@ -120,3 +120,32 @@ def estadisticas():
         "total_alumnos": total_alumnos,
         "total_asistencias": total_asistencias
     }
+
+@app.get("/grupos/{grupo_id}/asistencias")
+def obtener_asistencias_por_grupo(grupo_id: int):
+
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT
+            asistencias.id,
+            alumnos.nombre,
+            alumnos.matricula,
+            alumnos.grupo_id,
+            asistencias.fecha,
+            asistencias.hora
+        FROM asistencias
+        INNER JOIN alumnos
+        ON asistencias.alumno_id = alumnos.id
+        WHERE alumnos.grupo_id = ?
+    """, (grupo_id,))
+
+    asistencias = cursor.fetchall()
+
+    conexion.close()
+
+    return [
+        dict(asistencia)
+        for asistencia in asistencias
+    ]
