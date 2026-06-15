@@ -41,7 +41,11 @@ function App() {
 
   const [formGrupo, setFormGrupo] = useState({
     nombre: "",
-    descripcion: ""
+    materia: "",
+    aula: "",
+    dias: [],
+    hora_inicio: "",
+    hora_fin: ""
   });
 
   const cargarDatos = () => {
@@ -122,14 +126,18 @@ useEffect(() => {
       },
       body: JSON.stringify({
         ...formGrupo,
+        dias: formGrupo.dias.join(", "),
         maestro_id: usuario.id
-        })
-    })
+      })
+          })
       .then(response => response.json())
       .then(() => {
         setFormGrupo({
           nombre: "",
-          descripcion: ""
+          materia: "",
+          aula: "",
+          hora_inicio: "",
+          hora_fin: ""
         });
 
         cargarDatos();
@@ -299,7 +307,7 @@ useEffect(() => {
           <form className="formulario" onSubmit={registrarGrupo}>
             <input
               type="text"
-              placeholder="Nombre del grupo"
+              placeholder="Grupo"
               value={formGrupo.nombre}
               onChange={(e) =>
                 setFormGrupo({ ...formGrupo, nombre: e.target.value })
@@ -308,10 +316,177 @@ useEffect(() => {
 
             <input
               type="text"
-              placeholder="Descripción"
-              value={formGrupo.descripcion}
+              placeholder="Materia"
+              value={formGrupo.materia}
               onChange={(e) =>
-                setFormGrupo({ ...formGrupo, descripcion: e.target.value })
+                setFormGrupo({ ...formGrupo, materia: e.target.value })
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Aula"
+              value={formGrupo.aula}
+              onChange={(e) =>
+                setFormGrupo({ ...formGrupo, aula: e.target.value })
+              }
+            />
+            <h3>Días de clase</h3>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Lunes"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: [...formGrupo.dias, "Lunes"]
+                    });
+                  } else {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: formGrupo.dias.filter(
+                        dia => dia !== "Lunes"
+                      )
+                    });
+                  }
+                }}
+              />
+              Lunes
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Martes"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: [...formGrupo.dias, "Martes"]
+                    });
+                  } else {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: formGrupo.dias.filter(
+                        dia => dia !== "Martes"
+                      )
+                    });
+                  }
+                }}
+              />
+              Martes
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Miércoles"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: [...formGrupo.dias, "Miércoles"]
+                    });
+                  } else {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: formGrupo.dias.filter(
+                        dia => dia !== "Miércoles"
+                      )
+                    });
+                  }
+                }}
+              />
+              Miércoles
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Jueves"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: [...formGrupo.dias, "Jueves"]
+                    });
+                  } else {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: formGrupo.dias.filter(
+                        dia => dia !== "Jueves"
+                      )
+                    });
+                  }
+                }}
+              />
+              Jueves
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Viernes"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: [...formGrupo.dias, "Viernes"]
+                    });
+                  } else {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: formGrupo.dias.filter(
+                        dia => dia !== "Viernes"
+                      )
+                    });
+                  }
+                }}
+              />
+              Viernes
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Sabado"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: [...formGrupo.dias, "Sabado"]
+                    });
+                  } else {
+                    setFormGrupo({
+                      ...formGrupo,
+                      dias: formGrupo.dias.filter(
+                        dia => dia !== "Sabado"
+                      )
+                    });
+                  }
+                }}
+              />
+              Sabado
+            </label>
+
+            <input
+              type="time"
+              placeholder="Hora inicio"
+              value={formGrupo.hora_inicio}
+              onChange={(e) =>
+                setFormGrupo({ ...formGrupo, hora_inicio: e.target.value })
+              }
+            />
+
+
+            <input
+              type="time"
+              placeholder="Hora fin"
+              value={formGrupo.hora_fin}
+              onChange={(e) =>
+                setFormGrupo({ ...formGrupo, hora_fin: e.target.value })
               }
             />
 
@@ -328,8 +503,12 @@ useEffect(() => {
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Materia</th>
                 <th>Grupo</th>
-                <th>Descripción</th>
+                <th>Aula</th>
+                <th>Días</th>
+                <th>Hora inicio</th>
+                <th>Hora fin</th>
               </tr>
             </thead>
 
@@ -337,8 +516,12 @@ useEffect(() => {
               {grupos.map(grupo => (
                 <tr key={grupo.id}>
                   <td>{grupo.id}</td>
+                  <td>{grupo.materia}</td>
                   <td>{grupo.nombre}</td>
-                  <td>{grupo.descripcion}</td>
+                  <td>{grupo.aula}</td>
+                  <td>{grupo.dias}</td>
+                  <td>{grupo.hora_inicio}</td>
+                  <td>{grupo.hora_fin}</td>
                 </tr>
               ))}
             </tbody>
