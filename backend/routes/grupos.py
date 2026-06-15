@@ -9,11 +9,25 @@ def crear_grupo(data: dict):
     cursor = conexion.cursor()
 
     cursor.execute("""
-        INSERT INTO grupos (nombre, descripcion, maestro_id)
-        VALUES (?, ?, ?)
+        INSERT INTO grupos (
+            nombre,
+            descripcion,
+            materia,
+            aula,
+            dias,
+            hora_inicio,
+            hora_fin,
+            maestro_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data["nombre"],
         data.get("descripcion", ""),
+        data.get("materia", ""),
+        data.get("aula", ""),
+        data["dias"],
+        data.get("hora_inicio", ""),
+        data.get("hora_fin", ""),
         data["maestro_id"]
     ))
 
