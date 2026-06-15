@@ -57,7 +57,7 @@ function App() {
       .then(response => response.json())
       .then(data => setAsistencias(data));
 
-    fetch("http://127.0.0.1:8000/grupos")
+    fetch(`http://127.0.0.1:8000/maestros/${usuario.id}/grupos`)
       .then(response => response.json())
       .then(data => setGrupos(data));
     
@@ -80,9 +80,11 @@ function App() {
 
 
 
-  useEffect(() => {
+useEffect(() => {
+  if (usuario) {
     cargarDatos();
-  }, []);
+  }
+}, [usuario]);
 
   const registrarAlumno = (e) => {
     e.preventDefault();
@@ -118,7 +120,10 @@ function App() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(formGrupo)
+      body: JSON.stringify({
+        ...formGrupo,
+        maestro_id: usuario.id
+        })
     })
       .then(response => response.json())
       .then(() => {
@@ -247,11 +252,11 @@ function App() {
       <aside className="sidebar">
         <h2>Asistencia Facial</h2>
 
-        <button onClick={() => setPantalla("dashboard")}>Dashboard</button>
-        <button onClick={() => setPantalla("grupos")}>Grupos</button>
-        <button onClick={() => setPantalla("alumnos")}>Alumnos</button>
-        <button onClick={() => setPantalla("asistencia")}>Tomar asistencia</button>
-        <button onClick={() => setPantalla("reportes")}>Reportes</button>
+        <button onClick={() => setPantalla("dashboard")}>📊 Dashboard</button>
+        <button onClick={() => setPantalla("grupos")}> 👥 Grupos</button>
+        <button onClick={() => setPantalla("alumnos")}>🎓 Alumnos</button>
+        <button onClick={() => setPantalla("asistencia")}>📷 Tomar asistencia</button>
+        <button onClick={() => setPantalla("reportes")}>📋 Reportes</button>
 
         <button className="logout" onClick={() => setUsuario(null)}>
           Cerrar sesión
@@ -531,11 +536,6 @@ function App() {
         </div>
          </>
       )}
-
-
-
-    
-
 
       {pantalla === "reportes" && (
         <>
