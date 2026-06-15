@@ -11,6 +11,9 @@ from backend.routes import alumnos
 from backend.models.alumnos import crear_tabla_alumnos
 from backend.models.asistencias import crear_tabla_asistencias
 
+from backend.routes import maestros
+from backend.models.maestros import crear_tabla_maestros
+
 app = FastAPI()
 
 app.add_middleware(
@@ -24,10 +27,12 @@ app.add_middleware(
 crear_tabla_alumnos()
 crear_tabla_asistencias()
 crear_tabla_grupos()
+crear_tabla_maestros()
 
 app.include_router(alumnos.router)
 app.include_router(grupos.router)
 app.include_router(asistencia_activa.router)
+app.include_router(maestros.router)
 
 class Asistencia(BaseModel):
     alumno: str
