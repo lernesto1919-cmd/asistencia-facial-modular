@@ -9,11 +9,12 @@ def crear_grupo(data: dict):
     cursor = conexion.cursor()
 
     cursor.execute("""
-        INSERT INTO grupos (nombre, descripcion)
-        VALUES (?, ?)
+        INSERT INTO grupos (nombre, descripcion, maestro_id)
+        VALUES (?, ?, ?)
     """, (
         data["nombre"],
-        data.get("descripcion", "")
+        data.get("descripcion", ""),
+        data["maestro_id"]
     ))
 
     conexion.commit()
@@ -30,6 +31,24 @@ def obtener_grupos():
     cursor = conexion.cursor()
 
     cursor.execute("SELECT * FROM grupos")
+    grupos = cursor.fetchall()
+
+    conexion.close()
+
+    return [dict(grupo) for grupo in grupos]
+
+
+@router.get("/maestros/{maestro_id}/grupos")
+def obtener_grupos_por_maestro(maestro_id: int):
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT *
+        FROM grupos
+        WHERE maestro_id = ?
+    """, (maestro_id,))
+
     grupos = cursor.fetchall()
 
     conexion.close()
