@@ -32,6 +32,9 @@ function App() {
 
   const [pantalla, setPantalla] = useState("dashboard");
 
+  const [grupoAlumnosConsulta, setGrupoAlumnosConsulta] = useState("");
+  const [alumnosGrupo, setAlumnosGrupo] = useState([]);
+
   const [formulario, setFormulario] = useState({
     nombre: "",
     matricula: "",
@@ -193,6 +196,16 @@ useEffect(() => {
         setAsistenciasGrupo(data);
      });
 
+  };
+
+  const consultarAlumnosGrupo = () => {
+    if (!grupoAlumnosConsulta) return;
+
+    fetch(`http://127.0.0.1:8000/grupos/${grupoAlumnosConsulta}/alumnos`)
+      .then(response => response.json())
+      .then(data => {
+        setAlumnosGrupo(data);
+      });
   };
 
   const iniciarSesion = (e) => {
@@ -583,6 +596,49 @@ useEffect(() => {
         </div>
 
         <div className="seccion">
+          <h2>Consultar alumnos por grupo</h2>
+
+          <select
+            value={grupoAlumnosConsulta}
+            onChange={(e) => setGrupoAlumnosConsulta(e.target.value)}
+          >
+            <option value="">Selecciona un grupo</option>
+
+            {grupos.map(grupo => (
+              <option key={grupo.id} value={grupo.id}>
+                {grupo.materia} - {grupo.nombre}
+              </option>
+            ))}
+          </select>
+
+          <button onClick={consultarAlumnosGrupo}>
+            Consultar
+          </button>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Matrícula</th>
+                <th>Grupo</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {alumnosGrupo.map(alumno => (
+                <tr key={alumno.id}>
+                  <td>{alumno.id}</td>
+                  <td>{alumno.nombre}</td>
+                  <td>{alumno.matricula}</td>
+                  <td>{alumno.grupo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="seccion">
           <h2>Alumnos registrados</h2>
 
           <table>
@@ -654,6 +710,13 @@ useEffect(() => {
           <p>{mensajeAsistencia}</p>
         </div>
 
+        
+         </>
+      )}
+
+      {pantalla === "reportes" && (
+        <>
+
         <div className="seccion">
 
           <h2>Asistencias por grupo</h2>
@@ -717,11 +780,8 @@ useEffect(() => {
           </table>
 
         </div>
-         </>
-      )}
 
-      {pantalla === "reportes" && (
-        <>
+
         <div className="seccion">
           <h2>Historial de asistencias</h2>
 
