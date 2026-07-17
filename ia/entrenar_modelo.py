@@ -10,7 +10,7 @@ caras = []
 
 label_id = 0
 
-for nombre_persona in os.listdir(ruta_dataset):
+for nombre_persona in sorted(os.listdir(ruta_dataset)):
 
     ruta_persona = os.path.join(
         ruta_dataset,
@@ -34,22 +34,28 @@ for nombre_persona in os.listdir(ruta_dataset):
             )
 
             if imagen is not None:
+
+                imagen = cv2.resize(
+                    imagen,
+                    (150, 150)
+                )
+
                 caras.append(imagen)
                 etiquetas.append(label_id)
 
         label_id += 1
 
+if len(caras) == 0:
+    print("No hay imágenes para entrenar")
+    exit()
 
-# Crear reconocedor
 modelo = cv2.face.LBPHFaceRecognizer_create()
 
-# Entrenar
 modelo.train(
     caras,
     np.array(etiquetas)
 )
 
-# Guardar modelo
 modelo.write("ia/modelo_lbph.xml")
 
 print("Modelo entrenado correctamente")

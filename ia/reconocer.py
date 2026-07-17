@@ -1,5 +1,6 @@
 import requests
 import cv2
+import os
 
 API_URL = "http://127.0.0.1:8000"
 
@@ -9,15 +10,20 @@ detector_rostro = cv2.CascadeClassifier(
 )
 
 # Cargar modelo entrenado
+# Cargar modelo entrenado
 modelo = cv2.face.LBPHFaceRecognizer_create()
 modelo.read("ia/modelo_lbph.xml")
 
-# Nombres registrados en el modelo
-personas = [
-    "Luis_Zamora"
-]
+# Cargar nombres automáticamente desde las carpetas del dataset
+ruta_dataset = "ia/dataset"
+
+personas = os.listdir(ruta_dataset)
+personas.sort()
+
+print("Personas cargadas:", personas)
 
 registrados = set()
+
 
 # Consultar grupo activo
 try:
