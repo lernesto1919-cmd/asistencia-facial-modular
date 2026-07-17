@@ -51,7 +51,8 @@ def registrar_asistencia(data: Asistencia):
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT id FROM alumnos
+        SELECT id
+        FROM alumnos
         WHERE nombre = ?
     """, (data.alumno,))
 
@@ -59,6 +60,7 @@ def registrar_asistencia(data: Asistencia):
 
     if not alumno:
         conexion.close()
+
         return {
             "error": "Alumno no encontrado"
         }
@@ -70,7 +72,32 @@ def registrar_asistencia(data: Asistencia):
     hora = ahora.strftime("%H:%M:%S")
 
     cursor.execute("""
-        INSERT INTO asistencias (alumno_id, fecha, hora)
+        SELECT id
+        FROM asistencias
+        WHERE alumno_id = ?
+        AND fecha = ?
+    """, (
+        alumno_id,
+        fecha
+    ))
+
+    asistencia_existente = cursor.fetchone()
+
+    if asistencia_existente:
+        conexion.close()
+
+        return {
+            "mensaje": "La asistencia ya estaba registrada",
+            "alumno": data.alumno,
+            "fecha": fecha
+        }
+
+    cursor.execute("""
+        INSERT INTO asistencias (
+            alumno_id,
+            fecha,
+            hora
+        )
         VALUES (?, ?, ?)
     """, (
         alumno_id,
@@ -82,7 +109,10 @@ def registrar_asistencia(data: Asistencia):
     conexion.close()
 
     return {
-        "mensaje": "Asistencia registrada"
+        "mensaje": "Asistencia registrada",
+        "alumno": data.alumno,
+        "fecha": fecha,
+        "hora": hora
     }
 
 

@@ -35,6 +35,12 @@ function App() {
   const [grupoAlumnosConsulta, setGrupoAlumnosConsulta] = useState("");
   const [alumnosGrupo, setAlumnosGrupo] = useState([]);
 
+  const [busquedaAlumno, setBusquedaAlumno] = useState("");
+  const [resultadoBusqueda, setResultadoBusqueda] = useState([]);
+
+  const [registrandoRostro, setRegistrandoRostro] = useState(null);
+  const [rostroRegistrado, setRostroRegistrado] = useState(null);
+
   const [formulario, setFormulario] = useState({
     nombre: "",
     matricula: "",
@@ -229,6 +235,71 @@ useEffect(() => {
         }
       });
   };
+
+  const buscarAlumno = () => {
+
+    const resultado = alumnos.filter(alumno =>
+      alumno.nombre
+        .toLowerCase()
+        .includes(busquedaAlumno.toLowerCase())
+      ||
+      alumno.matricula
+        .toString()
+        .includes(busquedaAlumno)
+    );
+    setResultadoBusqueda(resultado);
+
+  };
+
+
+const registrarRostro = (alumno) => {
+
+  setRegistrandoRostro(alumno.id);
+  setRostroRegistrado(null);
+
+  fetch(
+    `http://127.0.0.1:8000/alumnos/${alumno.id}/registrar-rostro`,
+    {
+      method: "POST"
+    }
+  )
+    .then(response => response.json())
+    .then(data => {
+
+      if (data.ok) {
+
+        setRegistrandoRostro(null);
+        setRostroRegistrado(alumno.id);
+
+        // Actualizar el alumno en la tabla
+        setAlumnos(alumnosActuales =>
+          alumnosActuales.map(item =>
+            item.id === alumno.id
+              ? { ...item, rostro_registrado: 1 }
+              : item
+          )
+        );
+
+      } else {
+
+        setRegistrandoRostro(null);
+
+        alert(data.mensaje);
+
+      }
+
+    })
+    .catch(() => {
+
+      setRegistrandoRostro(null);
+
+      alert("No se pudo iniciar la cámara.");
+
+    });
+
+};
+
+
 
   if (!usuario) {
     return (
@@ -595,6 +666,49 @@ useEffect(() => {
           </form>
         </div>
 
+
+        <div className="seccion">
+
+          <h2>Buscar alumno</h2>
+
+          <input
+            type="text"
+            placeholder="Código o Nombre"
+            value={busquedaAlumno}
+            onChange={(e) =>
+              setBusquedaAlumno(e.target.value)
+            }
+          />
+
+          <button onClick={buscarAlumno}>
+            Buscar
+          </button>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Matrícula</th>
+                <th>Grupo</th>
+                <th>Rostro</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {resultadoBusqueda.map(alumno => (
+                <tr key={alumno.id}>
+                  <td>{alumno.id}</td>
+                  <td>{alumno.nombre}</td>
+                  <td>{alumno.matricula}</td>
+                  <td>{alumno.nombre_grupo || alumno.grupo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+        </div>
+
         <div className="seccion">
           <h2>Consultar alumnos por grupo</h2>
 
@@ -658,10 +772,32 @@ useEffect(() => {
                   <td>{alumno.nombre}</td>
                   <td>{alumno.matricula}</td>
                   <td>{alumno.nombre_grupo || alumno.grupo}</td>
+
+                  <td>
+                    <button
+                      type="button"
+                      disabled={
+                        registrandoRostro === alumno.id ||
+                        alumno.rostro_registrado === 1 ||
+                        rostroRegistrado === alumno.id
+                      }
+                      onClick={() => registrarRostro(alumno)}
+                    >
+                      {registrandoRostro === alumno.id
+                        ? "⏳ Registrando..."
+                        : alumno.rostro_registrado === 1 ||
+                          rostroRegistrado === alumno.id
+                        ? "✅ Rostro registrado"
+                        : "📷 Registrar rostro"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          
+
         </div>
         </>
       )}
