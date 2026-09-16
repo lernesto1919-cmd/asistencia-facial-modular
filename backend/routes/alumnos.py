@@ -3,11 +3,26 @@ from backend.database import conectar
 
 import subprocess
 import sys
+import os
+import shutil
 
 router = APIRouter()
 
 @router.post("/alumnos")
 def crear_alumno(data: dict):
+
+    nombre = str(data.get("nombre", "")).strip()
+    matricula = str(data.get("matricula", "")).strip()
+    grupo = str(data.get("grupo", "")).strip()
+    grupo_id = data.get("grupo_id")
+
+    # Validar campos obligatorios
+    if not nombre or not matricula or not grupo:
+        return {
+            "ok": False,
+            "mensaje": "Nombre, matrícula y grupo son obligatorios"
+        }
+
     conexion = conectar()
     cursor = conexion.cursor()
 
@@ -15,17 +30,19 @@ def crear_alumno(data: dict):
         INSERT INTO alumnos (nombre, matricula, grupo, grupo_id)
         VALUES (?, ?, ?, ?)
     """, (
-        data["nombre"],
-        data["matricula"],
-        data.get("grupo", ""),
-        data.get("grupo_id")
+        nombre,
+        matricula,
+        grupo,
+        grupo_id
     ))
 
     conexion.commit()
     conexion.close()
 
-    return {"mensaje": "Alumno creado"}
-
+    return {
+        "ok": True,
+        "mensaje": "Alumno creado"
+    }
 
 @router.get("/alumnos")
 def obtener_alumnos():
@@ -148,3 +165,68 @@ def registrar_rostro(alumno_id: int):
             "mensaje": "No se pudo completar el registro facial",
             "detalle": str(error)
         }
+
+@router.delete("/alumnos/{alumno_id}")
+def eliminar_alumno(alumno_id: int):
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    # Buscar alumno
+    cursor.execute("""
+        SELECT id, nombre
+        FROM alumnos
+        WHERE id = ?
+    """, (alumno_id,))
+
+    alumno = cursor.fetchone()
+
+    if not alumno:
+        conexion.close()
+        return {
+            "ok": False,
+            "mensaje": "Alumno no encontrado"
+        }
+
+    nombre = alumno["nombre"]
+
+    # Eliminar asistencias del alumno
+    cursor.execute("""
+        DELETE FROM asistencias
+        WHERE alumno_id = ?
+    """, (alumno_id,))
+
+    # Eliminar alumno
+    cursor.execute("""
+        DELETE FROM alumnos
+        WHERE id = ?
+    """, (alumno_id,))
+
+    conexion.commit()
+    conexion.close()
+
+    # Eliminar fotografías del rostro
+    ruta_rostro = os.path.join(
+        "ia",
+        "dataset",
+        nombre
+    )
+
+    if os.path.exists(ruta_rostro):
+        shutil.rmtree(ruta_rostro)
+
+    # Volver a entrenar el modelo
+    try:
+        subprocess.run([
+            sys.executable,
+            "ia/entrenar_modelo.py"
+        ])
+    except Exception as error:
+        print(
+            "No se pudo actualizar el modelo:",
+            error
+        )
+
+    return {
+        "ok": True,
+        "mensaje": f"Alumno {nombre} eliminado"
+    }

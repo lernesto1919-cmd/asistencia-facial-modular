@@ -153,6 +153,38 @@ useEffect(() => {
       });
   };
 
+  const eliminarGrupo = async (grupo) => {
+    const confirmar = window.confirm(
+      `¿Seguro que deseas eliminar el grupo ${grupo.nombre}?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/grupos/${grupo.id}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.ok) {
+        alert(data.mensaje);
+        cargarDatos();
+      } else {
+        alert(data.mensaje);
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo eliminar el grupo");
+    }
+  };
+
   const iniciarAsistencia = (e) => {
     e.preventDefault();
 
@@ -297,6 +329,38 @@ const registrarRostro = (alumno) => {
 
     });
 
+};
+
+const eliminarAlumno = async (alumno) => {
+  const confirmar = window.confirm(
+    `¿Seguro que deseas eliminar a ${alumno.nombre}?`
+  );
+
+  if (!confirmar) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/alumnos/${alumno.id}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.ok) {
+      alert(data.mensaje);
+      cargarDatos();
+    } else {
+      alert(data.mensaje);
+    }
+
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo eliminar el alumno");
+  }
 };
 
 
@@ -593,6 +657,7 @@ const registrarRostro = (alumno) => {
                 <th>Días</th>
                 <th>Hora inicio</th>
                 <th>Hora fin</th>
+                <th>Acciones</th>
               </tr>
             </thead>
 
@@ -606,6 +671,15 @@ const registrarRostro = (alumno) => {
                   <td>{grupo.dias}</td>
                   <td>{grupo.hora_inicio}</td>
                   <td>{grupo.hora_fin}</td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => eliminarGrupo(grupo)}
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -702,6 +776,9 @@ const registrarRostro = (alumno) => {
                   <td>{alumno.nombre}</td>
                   <td>{alumno.matricula}</td>
                   <td>{alumno.nombre_grupo || alumno.grupo}</td>
+                  <td>{alumno.rostro_registrado === 1
+                      ? "✅ Registrado"
+                      : "❌ No registrado"}</td>
                 </tr>
               ))}
             </tbody>
@@ -789,6 +866,13 @@ const registrarRostro = (alumno) => {
                           rostroRegistrado === alumno.id
                         ? "✅ Rostro registrado"
                         : "📷 Registrar rostro"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => eliminarAlumno(alumno)}
+                    >
+                      🗑️ Eliminar
                     </button>
                   </td>
                 </tr>
