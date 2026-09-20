@@ -15,9 +15,10 @@ def crear_alumno(data: dict):
     matricula = str(data.get("matricula", "")).strip()
     grupo = str(data.get("grupo", "")).strip()
     grupo_id = data.get("grupo_id")
+    maestro_id = data.get("maestro_id")
 
-    # Validar campos obligatorios
-    if not nombre or not matricula or not grupo:
+    # Validar datos obligatorios
+    if not nombre or not matricula or not grupo_id or not maestro_id:
         return {
             "ok": False,
             "mensaje": "Nombre, matrícula y grupo son obligatorios"
@@ -26,13 +27,57 @@ def crear_alumno(data: dict):
     conexion = conectar()
     cursor = conexion.cursor()
 
+    # Comprobar que el grupo pertenece al maestro
     cursor.execute("""
-        INSERT INTO alumnos (nombre, matricula, grupo, grupo_id)
+        SELECT id, nombre
+        FROM grupos
+        WHERE id = ?
+        AND maestro_id = ?
+    """, (
+        grupo_id,
+        maestro_id
+    ))
+
+    grupo_encontrado = cursor.fetchone()
+
+    if not grupo_encontrado:
+        conexion.close()
+
+        return {
+            "ok": False,
+            "mensaje": "El grupo seleccionado no pertenece a este maestro"
+        }
+
+    # Evitar matrícula duplicada
+    cursor.execute("""
+        SELECT id
+        FROM alumnos
+        WHERE matricula = ?
+    """, (matricula,))
+
+    alumno_existente = cursor.fetchone()
+
+    if alumno_existente:
+        conexion.close()
+
+        return {
+            "ok": False,
+            "mensaje": "Ya existe un alumno con esta matrícula"
+        }
+
+    # Registrar alumno
+    cursor.execute("""
+        INSERT INTO alumnos (
+            nombre,
+            matricula,
+            grupo,
+            grupo_id
+        )
         VALUES (?, ?, ?, ?)
     """, (
         nombre,
         matricula,
-        grupo,
+        grupo_encontrado["nombre"],
         grupo_id
     ))
 
@@ -41,7 +86,7 @@ def crear_alumno(data: dict):
 
     return {
         "ok": True,
-        "mensaje": "Alumno creado"
+        "mensaje": "Alumno registrado correctamente"
     }
 
 @router.get("/alumnos")
@@ -230,3 +275,28 @@ def eliminar_alumno(alumno_id: int):
         "ok": True,
         "mensaje": f"Alumno {nombre} eliminado"
     }
+
+@router.get("/maestros/{maestro_id}/alumnos")
+def obtener_alumnos_por_maestro(maestro_id: int):
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT
+            alumnos.id,
+            alumnos.nombre,
+            alumnos.matricula,
+            alumnos.grupo,
+            alumnos.grupo_id,
+            alumnos.rostro_registrado,
+            grupos.nombre AS nombre_grupo
+        FROM alumnos
+        INNER JOIN grupos
+        ON alumnos.grupo_id = grupos.id
+        WHERE grupos.maestro_id = ?
+    """, (maestro_id,))
+
+    alumnos = cursor.fetchall()
+    conexion.close()
+
+    return [dict(alumno) for alumno in alumnos]

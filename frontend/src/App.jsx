@@ -8,8 +8,18 @@ function App() {
     correo: "",
    password: ""
   });
-
   const [errorLogin, setErrorLogin] = useState("");
+  const [modoRegistro, setModoRegistro] = useState(false);
+
+  const [registroMaestro, setRegistroMaestro] = useState({
+    nombre: "",
+    correo: "",
+    password: "",
+    confirmarPassword: ""
+  });
+
+const [mensajeRegistro, setMensajeRegistro] = useState("");
+  
 
   
   const [estadisticas, setEstadisticas] = useState({
@@ -57,37 +67,41 @@ function App() {
     hora_fin: ""
   });
 
-  const cargarDatos = () => {
-    fetch("http://127.0.0.1:8000/estadisticas")
+  const cargarDatos = (maestroId = usuario?.id) => {
+    if (!maestroId) return;
+
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/estadisticas`)
       .then(response => response.json())
       .then(data => setEstadisticas(data));
 
-    fetch("http://127.0.0.1:8000/alumnos")
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/alumnos`)
       .then(response => response.json())
       .then(data => setAlumnos(data));
 
-    fetch("http://127.0.0.1:8000/asistencias")
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/asistencias`)
       .then(response => response.json())
       .then(data => setAsistencias(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${usuario.id}/grupos`)
-      .then(response => response.json())
-      .then(data => setGrupos(data));
-    
-    fetch("http://127.0.0.1:8000/grupo-activo")
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/grupos`)
       .then(response => response.json())
       .then(data => {
-        setGrupoActivo(data.grupo_id);
+        setGrupos(data);
 
-        const grupoEncontrado = grupos.find(
-          grupo => grupo.id === data.grupo_id
-        );
+        fetch("http://127.0.0.1:8000/grupo-activo")
+          .then(response => response.json())
+          .then(activo => {
+            setGrupoActivo(activo.grupo_id);
 
-        if (grupoEncontrado) {
-          setNombreGrupoActivo(grupoEncontrado.nombre);
-        } else {
-          setNombreGrupoActivo("");
-        }
+            const grupoEncontrado = data.find(
+              grupo => grupo.id === activo.grupo_id
+            );
+
+            if (grupoEncontrado) {
+              setNombreGrupoActivo(grupoEncontrado.nombre);
+            } else {
+              setNombreGrupoActivo("");
+            }
+          });
       });
   };
 
@@ -109,11 +123,17 @@ useEffect(() => {
       },
       body: JSON.stringify({
         ...formulario,
-        grupo_id: Number(formulario.grupo_id)
+        grupo_id: Number(formulario.grupo_id),
+        maestro_id: usuario.id
       })
     })
       .then(response => response.json())
-      .then(() => {
+      .then(data => {
+        if (data.ok === false) {
+          alert(data.mensaje);
+          return;
+        }
+
         setFormulario({
           nombre: "",
           matricula: "",
@@ -121,7 +141,11 @@ useEffect(() => {
           grupo_id: ""
         });
 
-        cargarDatos();
+        cargarDatos(usuario.id);
+      })
+      .catch(error => {
+        console.error(error);
+        alert("No se pudo registrar el alumno");
       });
   };
 
@@ -138,18 +162,28 @@ useEffect(() => {
         dias: formGrupo.dias.join(", "),
         maestro_id: usuario.id
       })
-          })
+    })
       .then(response => response.json())
-      .then(() => {
+      .then(data => {
+        if (data.ok === false) {
+          alert(data.mensaje);
+          return;
+        }
+
         setFormGrupo({
           nombre: "",
           materia: "",
           aula: "",
+          dias: [],
           hora_inicio: "",
           hora_fin: ""
         });
 
-        cargarDatos();
+        cargarDatos(usuario.id);
+      })
+      .catch(error => {
+        console.error(error);
+        alert("No se pudo registrar el grupo");
       });
   };
 
@@ -261,10 +295,66 @@ useEffect(() => {
         if (data.acceso) {
           setUsuario(data.maestro);
           setErrorLogin("");
-          cargarDatos();
+          cargarDatos(data.maestro.id);
         } else {
           setErrorLogin("Correo o contraseña incorrectos");
         }
+      });
+  };
+  const registrarMaestro = (e) => {
+    e.preventDefault();
+
+    if (
+      !registroMaestro.nombre ||
+      !registroMaestro.correo ||
+      !registroMaestro.password ||
+      !registroMaestro.confirmarPassword
+    ) {
+      setMensajeRegistro("Completa todos los campos");
+      return;
+    }
+
+    if (registroMaestro.password !== registroMaestro.confirmarPassword) {
+      setMensajeRegistro("Las contraseñas no coinciden");
+      return;
+    }
+
+    fetch("http://127.0.0.1:8000/maestros", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        nombre: registroMaestro.nombre,
+        correo: registroMaestro.correo,
+        password: registroMaestro.password
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          setMensajeRegistro("");
+          setRegistroMaestro({
+            nombre: "",
+            correo: "",
+            password: "",
+            confirmarPassword: ""
+          });
+
+          setLogin({
+            correo: registroMaestro.correo,
+            password: ""
+          });
+
+          setModoRegistro(false);
+          alert("Cuenta creada correctamente. Ahora inicia sesión.");
+        } else {
+          setMensajeRegistro(data.mensaje);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        setMensajeRegistro("No se pudo crear la cuenta");
       });
   };
 
@@ -369,33 +459,125 @@ const eliminarAlumno = async (alumno) => {
     return (
       <div className="contenedor">
         <div className="seccion">
-          <h1 className="titulo">Login Maestro</h1>
 
-          <form className="formulario" onSubmit={iniciarSesion}>
-            <input
-              type="email"
-              placeholder="Correo"
-              value={login.correo}
-              onChange={(e) =>
-                setLogin({ ...login, correo: e.target.value })
-              }
-            />
+          {!modoRegistro ? (
+            <>
+              <h1 className="titulo">Login Maestro</h1>
 
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={login.password}
-              onChange={(e) =>
-                setLogin({ ...login, password: e.target.value })
-              }
-            />
+              <form className="formulario" onSubmit={iniciarSesion}>
+                <input
+                  type="email"
+                  placeholder="Correo"
+                  value={login.correo}
+                  onChange={(e) =>
+                    setLogin({ ...login, correo: e.target.value })
+                  }
+                />
 
-            <button type="submit">
-              Iniciar sesión
-            </button>
-          </form>
+                <input
+                  type="password"
+                  placeholder="Contraseña"
+                  value={login.password}
+                  onChange={(e) =>
+                    setLogin({ ...login, password: e.target.value })
+                  }
+                />
 
-          <p>{errorLogin}</p>
+                <button type="submit">
+                  Iniciar sesión
+                </button>
+              </form>
+
+              <p>{errorLogin}</p>
+
+              <p>¿No tienes una cuenta?</p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setModoRegistro(true);
+                  setErrorLogin("");
+                }}
+              >
+                Crear cuenta
+              </button>
+            </>
+          ) : (
+            <>
+              <h1 className="titulo">Crear cuenta</h1>
+
+              <form className="formulario" onSubmit={registrarMaestro}>
+
+                <input
+                  type="text"
+                  placeholder="Nombre completo"
+                  value={registroMaestro.nombre}
+                  onChange={(e) =>
+                    setRegistroMaestro({
+                      ...registroMaestro,
+                      nombre: e.target.value
+                    })
+                  }
+                />
+
+                <input
+                  type="email"
+                  placeholder="Correo"
+                  value={registroMaestro.correo}
+                  onChange={(e) =>
+                    setRegistroMaestro({
+                      ...registroMaestro,
+                      correo: e.target.value
+                    })
+                  }
+                />
+
+                <input
+                  type="password"
+                  placeholder="Contraseña"
+                  value={registroMaestro.password}
+                  onChange={(e) =>
+                    setRegistroMaestro({
+                      ...registroMaestro,
+                      password: e.target.value
+                    })
+                  }
+                />
+
+                <input
+                  type="password"
+                  placeholder="Confirmar contraseña"
+                  value={registroMaestro.confirmarPassword}
+                  onChange={(e) =>
+                    setRegistroMaestro({
+                      ...registroMaestro,
+                      confirmarPassword: e.target.value
+                    })
+                  }
+                />
+
+                <button type="submit">
+                  Crear cuenta
+                </button>
+
+              </form>
+
+              <p>{mensajeRegistro}</p>
+
+              <p>¿Ya tienes una cuenta?</p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setModoRegistro(false);
+                  setMensajeRegistro("");
+                }}
+              >
+                Volver al inicio de sesión
+              </button>
+            </>
+          )}
+
         </div>
       </div>
     );

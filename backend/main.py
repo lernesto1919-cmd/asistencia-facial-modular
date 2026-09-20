@@ -137,6 +137,34 @@ def obtener_asistencias():
 
     return [dict(asistencia) for asistencia in asistencias]
 
+@app.get("/maestros/{maestro_id}/asistencias")
+def obtener_asistencias_por_maestro(maestro_id: int):
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT
+            asistencias.id,
+            alumnos.nombre,
+            alumnos.matricula,
+            alumnos.grupo_id,
+            grupos.nombre AS nombre_grupo,
+            asistencias.fecha,
+            asistencias.hora
+        FROM asistencias
+        INNER JOIN alumnos
+        ON asistencias.alumno_id = alumnos.id
+        INNER JOIN grupos
+        ON alumnos.grupo_id = grupos.id
+        WHERE grupos.maestro_id = ?
+        ORDER BY asistencias.fecha DESC, asistencias.hora DESC
+    """, (maestro_id,))
+
+    asistencias = cursor.fetchall()
+    conexion.close()
+
+    return [dict(asistencia) for asistencia in asistencias]
+
 
 @app.get("/estadisticas")
 def estadisticas():
@@ -147,6 +175,40 @@ def estadisticas():
     total_alumnos = cursor.fetchone()["total_alumnos"]
 
     cursor.execute("SELECT COUNT(*) as total_asistencias FROM asistencias")
+    total_asistencias = cursor.fetchone()["total_asistencias"]
+
+    conexion.close()
+
+    return {
+        "total_alumnos": total_alumnos,
+        "total_asistencias": total_asistencias
+    }
+
+@app.get("/maestros/{maestro_id}/estadisticas")
+def estadisticas_por_maestro(maestro_id: int):
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_alumnos
+        FROM alumnos
+        INNER JOIN grupos
+        ON alumnos.grupo_id = grupos.id
+        WHERE grupos.maestro_id = ?
+    """, (maestro_id,))
+
+    total_alumnos = cursor.fetchone()["total_alumnos"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_asistencias
+        FROM asistencias
+        INNER JOIN alumnos
+        ON asistencias.alumno_id = alumnos.id
+        INNER JOIN grupos
+        ON alumnos.grupo_id = grupos.id
+        WHERE grupos.maestro_id = ?
+    """, (maestro_id,))
+
     total_asistencias = cursor.fetchone()["total_asistencias"]
 
     conexion.close()
