@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function App() {
@@ -18,10 +18,26 @@ function App() {
     confirmarPassword: ""
   });
 
-const [mensajeRegistro, setMensajeRegistro] = useState("");
-  
+  const [tipoAcceso, setTipoAcceso] = useState("maestro");
 
-  
+  const [accesoAlumno, setAccesoAlumno] = useState({
+    matricula: "",
+    codigo: ""
+  });
+
+
+  const [mensajeAlumno, setMensajeAlumno] = useState("");
+
+  const [alumnoActual, setAlumnoActual] = useState(null);
+
+  const [mensajeRegistro, setMensajeRegistro] = useState("");
+
+  const [mostrarCamara, setMostrarCamara] = useState(false);
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [fotoCapturada, setFotoCapturada] = useState(null);
+
   const [estadisticas, setEstadisticas] = useState({
     total_alumnos: 0,
     total_asistencias: 0
@@ -70,24 +86,24 @@ const [mensajeRegistro, setMensajeRegistro] = useState("");
   const cargarDatos = (maestroId = usuario?.id) => {
     if (!maestroId) return;
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/estadisticas`)
+    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/estadisticas`)
       .then(response => response.json())
       .then(data => setEstadisticas(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/alumnos`)
+    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/alumnos`)
       .then(response => response.json())
       .then(data => setAlumnos(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/asistencias`)
+    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/asistencias`)
       .then(response => response.json())
       .then(data => setAsistencias(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/grupos`)
+    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/grupos`)
       .then(response => response.json())
       .then(data => {
         setGrupos(data);
 
-        fetch("http://127.0.0.1:8000/grupo-activo")
+        fetch("http://192.168.50.209:8000/grupo-activo")
           .then(response => response.json())
           .then(activo => {
             setGrupoActivo(activo.grupo_id);
@@ -116,7 +132,7 @@ useEffect(() => {
   const registrarAlumno = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/alumnos", {
+    fetch("http://192.168.50.209:8000/alumnos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -152,7 +168,7 @@ useEffect(() => {
   const registrarGrupo = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/grupos", {
+    fetch("http://192.168.50.209:8000/grupos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -198,7 +214,7 @@ useEffect(() => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/grupos/${grupo.id}`,
+        `http://192.168.50.209:8000/grupos/${grupo.id}`,
         {
           method: "DELETE"
         }
@@ -222,7 +238,7 @@ useEffect(() => {
   const iniciarAsistencia = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/iniciar-asistencia", {
+    fetch("http://192.168.50.209:8000/iniciar-asistencia", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -243,7 +259,7 @@ useEffect(() => {
   
   const finalizarAsistencia = () => {
 
-  fetch("http://127.0.0.1:8000/finalizar-asistencia", {
+  fetch("http://192.168.50.209:8000/finalizar-asistencia", {
     method: "POST"
     })
     .then(response => response.json())
@@ -261,7 +277,7 @@ useEffect(() => {
     if (!grupoConsulta) return;
 
     fetch(
-      `http://127.0.0.1:8000/grupos/${grupoConsulta}/asistencias`
+      `http://192.168.50.209:8000/grupos/${grupoConsulta}/asistencias`
     )
      .then(response => response.json())
       .then(data => {
@@ -273,7 +289,7 @@ useEffect(() => {
   const consultarAlumnosGrupo = () => {
     if (!grupoAlumnosConsulta) return;
 
-    fetch(`http://127.0.0.1:8000/grupos/${grupoAlumnosConsulta}/alumnos`)
+    fetch(`http://192.168.50.209:8000/grupos/${grupoAlumnosConsulta}/alumnos`)
       .then(response => response.json())
       .then(data => {
         setAlumnosGrupo(data);
@@ -283,7 +299,7 @@ useEffect(() => {
   const iniciarSesion = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/login", {
+    fetch("http://192.168.50.209:8000/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -319,7 +335,7 @@ useEffect(() => {
       return;
     }
 
-    fetch("http://127.0.0.1:8000/maestros", {
+    fetch("http://192.168.50.209:8000/maestros", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -358,6 +374,44 @@ useEffect(() => {
       });
   };
 
+  const unirseClase = (e) => {
+    e.preventDefault();
+
+    setMensajeAlumno("");
+
+    fetch("http://192.168.50.209:8000/alumnos/unirse-clase", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        matricula: accesoAlumno.matricula,
+        codigo: accesoAlumno.codigo
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          setAlumnoActual(data.alumno);
+
+          setMensajeAlumno(
+            `Te uniste correctamente a ${data.grupo.materia} - ${data.grupo.nombre}`
+          );
+
+          setAccesoAlumno({
+            matricula: "",
+            codigo: ""
+          });
+        } else {
+          setMensajeAlumno(data.mensaje);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        setMensajeAlumno("No se pudo conectar con el servidor");
+      });
+  };
+
   const buscarAlumno = () => {
 
     const resultado = alumnos.filter(alumno =>
@@ -380,7 +434,7 @@ const registrarRostro = (alumno) => {
   setRostroRegistrado(null);
 
   fetch(
-    `http://127.0.0.1:8000/alumnos/${alumno.id}/registrar-rostro`,
+    `http://192.168.50.209:8000/alumnos/${alumno.id}/registrar-rostro-maestro`,
     {
       method: "POST"
     }
@@ -421,6 +475,224 @@ const registrarRostro = (alumno) => {
 
 };
 
+const abrirCamaraAlumno = async () => {
+  if (!alumnoActual) {
+    setMensajeAlumno("No se encontró el alumno");
+    return;
+  }
+
+  try {
+    setMensajeAlumno("Preparando registro facial...");
+
+    // Limpiar las fotografías anteriores
+    const response = await fetch(
+      `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
+      {
+        method: "POST"
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.ok) {
+      setMensajeAlumno(data.mensaje);
+      return;
+    }
+
+    // Abrir cámara
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user"
+      },
+      audio: false
+    });
+
+    setMostrarCamara(true);
+    setFotoCapturada(null);
+    setMensajeAlumno("");
+
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    }, 100);
+
+  } catch (error) {
+    console.error(error);
+    setMensajeAlumno("No se pudo iniciar el registro facial");
+  }
+};
+
+const capturarFoto = () => {
+  const video = videoRef.current;
+  const canvas = canvasRef.current;
+
+  if (!video || !canvas) return;
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const contexto = canvas.getContext("2d");
+
+  contexto.drawImage(
+    video,
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  const imagen = canvas.toDataURL("image/jpeg", 0.9);
+
+  setFotoCapturada(imagen);
+};
+
+const enviarFoto = () => {
+  if (!fotoCapturada || !alumnoActual) {
+    setMensajeAlumno("Primero toma una foto");
+    return;
+  }
+
+  fetch(
+    `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/subir-rostro`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        imagen: fotoCapturada
+      })
+    }
+  )
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        setMensajeAlumno(
+          `✅ Foto ${data.numero} guardada correctamente`
+        );
+      } else {
+        setMensajeAlumno(data.mensaje);
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      setMensajeAlumno("No se pudo enviar la fotografía");
+    });
+};
+
+const registrarRostroAutomatico = async () => {
+  const video = videoRef.current;
+  const canvas = canvasRef.current;
+
+  if (!video || !canvas || !alumnoActual) {
+    setMensajeAlumno("No se pudo iniciar el registro facial");
+    return;
+  }
+
+  setMensajeAlumno("📷 Iniciando registro facial...");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const contexto = canvas.getContext("2d");
+
+  for (let i = 1; i <= 30; i++) {
+    contexto.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    const imagen = canvas.toDataURL("image/jpeg", 0.9);
+
+    try {
+      const response = await fetch(
+        `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/subir-rostro`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            imagen: imagen
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        setMensajeAlumno(`❌ Error en la foto ${i}`);
+        return;
+      }
+
+      setMensajeAlumno(
+        `📸 Capturando rostro... ${i}/30`
+      );
+
+    } catch (error) {
+      console.error(error);
+      setMensajeAlumno("❌ Error al enviar las fotografías");
+      return;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  setMensajeAlumno("🧠 Entrenando reconocimiento facial...");
+
+  try {
+    const response = await fetch(
+      `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/registrar-rostro`,
+      {
+        method: "POST"
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.ok) {
+
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject;
+
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+
+        videoRef.current.srcObject = null;
+      }
+
+      setMostrarCamara(false);
+      setFotoCapturada(null);
+
+      setAlumnoActual({
+        ...alumnoActual,
+        rostro_registrado: 1
+      });
+
+      setMensajeAlumno(
+        `✅ Rostro registrado correctamente (${data.imagenes} imágenes)`
+      );
+    } else {
+      setMensajeAlumno(
+        `❌ ${data.mensaje}`
+      );
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    setMensajeAlumno(
+      "❌ No se pudo entrenar el reconocimiento facial"
+    );
+  }
+};
+
 const eliminarAlumno = async (alumno) => {
   const confirmar = window.confirm(
     `¿Seguro que deseas eliminar a ${alumno.nombre}?`
@@ -432,7 +704,7 @@ const eliminarAlumno = async (alumno) => {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:8000/alumnos/${alumno.id}`,
+      `http://192.168.50.209:8000/alumnos/${alumno.id}`,
       {
         method: "DELETE"
       }
@@ -451,6 +723,7 @@ const eliminarAlumno = async (alumno) => {
     console.error(error);
     alert("No se pudo eliminar el alumno");
   }
+
 };
 
 
@@ -459,8 +732,123 @@ const eliminarAlumno = async (alumno) => {
     return (
       <div className="contenedor">
         <div className="seccion">
+          <div className="selector-acceso">
+            <button
+              type="button"
+              onClick={() => {
+                setTipoAcceso("maestro");
+                setMensajeAlumno("");
+              }}
+            >
+              👨‍🏫 Maestro
+            </button>
 
-          {!modoRegistro ? (
+            <button
+              type="button"
+              onClick={() => {
+                setTipoAcceso("alumno");
+                setErrorLogin("");
+                setModoRegistro(false);
+              }}
+            >
+              🎓 Alumno
+            </button>
+          </div>
+
+          {tipoAcceso === "alumno" ? (
+            <>
+              <h1 className="titulo">Portal del alumno</h1>
+
+              {!alumnoActual ? (
+                <>
+                  <p>
+                    Ingresa tu código de alumno y el código proporcionado por tu profesor.
+                  </p>
+
+                  <form className="formulario" onSubmit={unirseClase}>
+                    <input
+                      type="text"
+                      placeholder="Código de alumno"
+                      value={accesoAlumno.matricula}
+                      onChange={(e) =>
+                        setAccesoAlumno({
+                          ...accesoAlumno,
+                          matricula: e.target.value
+                        })
+                      }
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Código de clase"
+                      value={accesoAlumno.codigo}
+                      onChange={(e) =>
+                        setAccesoAlumno({
+                          ...accesoAlumno,
+                          codigo: e.target.value.toUpperCase()
+                        })
+                      }
+                    />
+
+                    <button type="submit">
+                      Unirme a la clase
+                    </button>
+                  </form>
+
+                  <p>{mensajeAlumno}</p>
+                </>
+              ) : (
+                <>
+                  <h2>Hola, {alumnoActual.nombre}</h2>
+
+                  <p>
+                    Código de alumno: {alumnoActual.matricula}
+                  </p>
+
+                  <p>✅ Clase vinculada correctamente</p>
+
+                  <button
+                    type="button"
+                    onClick={abrirCamaraAlumno}
+                  >
+                    📷 Registrar mi rostro
+                  </button>
+                  {mostrarCamara && (
+                    <div>
+                      <h3>Registro facial</h3>
+
+                      <p>
+                        Coloca tu rostro frente a la cámara.
+                      </p>
+
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        style={{
+                          width: "100%",
+                          maxWidth: "500px",
+                          borderRadius: "10px"
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={registrarRostroAutomatico}
+                      >
+                        📸 Iniciar captura automática
+                      </button>
+                      <canvas
+                        ref={canvasRef}
+                        style={{ display: "none" }}
+                      />
+                      
+                      <p>{mensajeAlumno}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          ) : !modoRegistro ? (
             <>
               <h1 className="titulo">Login Maestro</h1>
 
@@ -507,7 +895,6 @@ const eliminarAlumno = async (alumno) => {
               <h1 className="titulo">Crear cuenta</h1>
 
               <form className="formulario" onSubmit={registrarMaestro}>
-
                 <input
                   type="text"
                   placeholder="Nombre completo"
@@ -559,7 +946,6 @@ const eliminarAlumno = async (alumno) => {
                 <button type="submit">
                   Crear cuenta
                 </button>
-
               </form>
 
               <p>{mensajeRegistro}</p>
@@ -839,6 +1225,7 @@ const eliminarAlumno = async (alumno) => {
                 <th>Días</th>
                 <th>Hora inicio</th>
                 <th>Hora fin</th>
+                <th>Código de clase</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -853,6 +1240,7 @@ const eliminarAlumno = async (alumno) => {
                   <td>{grupo.dias}</td>
                   <td>{grupo.hora_inicio}</td>
                   <td>{grupo.hora_fin}</td>
+                  <td><strong>{grupo.codigo}</strong></td>
 
                   <td>
                     <button
