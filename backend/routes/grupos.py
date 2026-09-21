@@ -1,7 +1,14 @@
 from fastapi import APIRouter
 from backend.database import conectar
 
+import secrets
+import string
+
 router = APIRouter()
+
+def generar_codigo():
+    caracteres = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(caracteres) for _ in range(6))
 
 @router.post("/grupos")
 def crear_grupo(data: dict):
@@ -33,6 +40,19 @@ def crear_grupo(data: dict):
     conexion = conectar()
     cursor = conexion.cursor()
 
+    # Generar un código único para la clase
+    while True:
+        codigo = generar_codigo()
+
+        cursor.execute("""
+            SELECT id
+            FROM grupos
+            WHERE codigo = ?
+        """, (codigo,))
+
+        if not cursor.fetchone():
+            break
+
     cursor.execute("""
         INSERT INTO grupos (
             nombre,
@@ -42,9 +62,10 @@ def crear_grupo(data: dict):
             dias,
             hora_inicio,
             hora_fin,
-            maestro_id
+            maestro_id,
+            codigo
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         nombre,
         descripcion,
@@ -53,7 +74,8 @@ def crear_grupo(data: dict):
         dias,
         hora_inicio,
         hora_fin,
-        maestro_id
+        maestro_id,
+        codigo
     ))
 
     conexion.commit()
@@ -61,7 +83,8 @@ def crear_grupo(data: dict):
 
     return {
         "ok": True,
-        "mensaje": "Grupo creado"
+        "mensaje": "Grupo creado",
+        "codigo": codigo
     }
 
 
