@@ -356,7 +356,7 @@ def unirse_clase(data: dict):
 
     # Buscar alumno por matrícula
     cursor.execute("""
-        SELECT id, nombre, matricula
+        SELECT id, nombre, matricula, rostro_registrado
         FROM alumnos
         WHERE matricula = ?
     """, (matricula,))
@@ -372,7 +372,7 @@ def unirse_clase(data: dict):
 
     # Buscar grupo por código
     cursor.execute("""
-        SELECT id, nombre, materia
+        SELECT id, nombre, materia, codigo
         FROM grupos
         WHERE UPPER(codigo) = ?
     """, (codigo,))
@@ -402,8 +402,20 @@ def unirse_clase(data: dict):
     if inscripcion_existente:
         conexion.close()
         return {
-            "ok": False,
-            "mensaje": "Ya estás inscrito en esta clase"
+            "ok": True,
+            "mensaje": "Acceso correcto",
+            "alumno": {
+                "id": alumno["id"],
+                "nombre": alumno["nombre"],
+                "matricula": alumno["matricula"],
+                "rostro_registrado": alumno["rostro_registrado"]
+            },
+            "grupo": {
+                "id": grupo["id"],
+                "nombre": grupo["nombre"],
+                "materia": grupo["materia"],
+                "codigo": grupo["codigo"]
+            }
         }
 
     # Crear inscripción
@@ -427,12 +439,14 @@ def unirse_clase(data: dict):
         "alumno": {
             "id": alumno["id"],
             "nombre": alumno["nombre"],
-            "matricula": alumno["matricula"]
+            "matricula": alumno["matricula"],
+            "rostro_registrado": alumno["rostro_registrado"]
         },
         "grupo": {
             "id": grupo["id"],
             "nombre": grupo["nombre"],
-            "materia": grupo["materia"]
+            "materia": grupo["materia"],
+            "codigo": grupo["codigo"]
         }
     }
 
