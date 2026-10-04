@@ -91,24 +91,24 @@ function App() {
   const cargarDatos = (maestroId = usuario?.id) => {
     if (!maestroId) return;
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/estadisticas`)
+    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/estadisticas`)
       .then(response => response.json())
       .then(data => setEstadisticas(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/alumnos`)
+    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/alumnos`)
       .then(response => response.json())
       .then(data => setAlumnos(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/asistencias`)
+    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/asistencias`)
       .then(response => response.json())
       .then(data => setAsistencias(data));
 
-    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/grupos`)
+    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/grupos`)
       .then(response => response.json())
       .then(data => {
         setGrupos(data);
 
-        fetch("http://127.0.0.1:8000/grupo-activo")
+        fetch("https://asistencia-facial-modular.onrender.com/grupo-activo")
           .then(response => response.json())
           .then(activo => {
             setGrupoActivo(activo.grupo_id);
@@ -158,7 +158,7 @@ useEffect(() => {
       setResultadoImportacion(null);
 
       const response = await fetch(
-        "http://127.0.0.1:8000/alumnos/importar",
+        "https://asistencia-facial-modular.onrender.com/alumnos/importar",
         {
           method: "POST",
           body: formData
@@ -190,7 +190,7 @@ useEffect(() => {
   const registrarAlumno = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/alumnos", {
+    fetch("https://asistencia-facial-modular.onrender.com/alumnos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -226,7 +226,7 @@ useEffect(() => {
   const registrarGrupo = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/grupos", {
+    fetch("https://asistencia-facial-modular.onrender.com/grupos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -272,7 +272,7 @@ useEffect(() => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/grupos/${grupo.id}`,
+        `https://asistencia-facial-modular.onrender.com/grupos/${grupo.id}`,
         {
           method: "DELETE"
         }
@@ -296,7 +296,7 @@ useEffect(() => {
   const iniciarAsistencia = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/iniciar-asistencia", {
+    fetch("https://asistencia-facial-modular.onrender.com/iniciar-asistencia", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -317,7 +317,7 @@ useEffect(() => {
   
   const finalizarAsistencia = () => {
 
-  fetch("http://127.0.0.1:8000/finalizar-asistencia", {
+  fetch("https://asistencia-facial-modular.onrender.com/finalizar-asistencia", {
     method: "POST"
     })
     .then(response => response.json())
@@ -335,7 +335,7 @@ useEffect(() => {
     if (!grupoConsulta) return;
 
     fetch(
-      `http://127.0.0.1:8000/grupos/${grupoConsulta}/asistencias`
+      `https://asistencia-facial-modular.onrender.com/grupos/${grupoConsulta}/asistencias`
     )
      .then(response => response.json())
       .then(data => {
@@ -351,7 +351,7 @@ useEffect(() => {
     }
 
     window.open(
-      `http://127.0.0.1:8000/grupos/${grupoConsulta}/asistencias/exportar`,
+      `https://asistencia-facial-modular.onrender.com/grupos/${grupoConsulta}/asistencias/exportar`,
       "_blank"
     );
   };
@@ -359,7 +359,7 @@ useEffect(() => {
   const consultarAlumnosGrupo = () => {
     if (!grupoAlumnosConsulta) return;
 
-    fetch(`http://127.0.0.1:8000/grupos/${grupoAlumnosConsulta}/alumnos`)
+    fetch(`https://asistencia-facial-modular.onrender.com/grupos/${grupoAlumnosConsulta}/alumnos`)
       .then(response => response.json())
       .then(data => {
         setAlumnosGrupo(data);
@@ -369,7 +369,7 @@ useEffect(() => {
   const iniciarSesion = (e) => {
     e.preventDefault();
 
-    fetch("http://127.0.0.1:8000/login", {
+    fetch("https://asistencia-facial-modular.onrender.com/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -405,7 +405,7 @@ useEffect(() => {
       return;
     }
 
-    fetch("http://127.0.0.1:8000/maestros", {
+    fetch("https://asistencia-facial-modular.onrender.com/maestros", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -449,7 +449,7 @@ useEffect(() => {
 
     setMensajeAlumno("");
 
-    fetch("http://127.0.0.1:8000/alumnos/unirse-clase", {
+    fetch("https://asistencia-facial-modular.onrender.com/alumnos/unirse-clase", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -477,8 +477,11 @@ useEffect(() => {
         }
       })
       .catch(error => {
-        console.error(error);
-        setMensajeAlumno("No se pudo conectar con el servidor");
+        console.error("ERROR ALUMNO:", error);
+
+        setMensajeAlumno(
+          `Error: ${error.message}`
+        );
       });
   };
 
@@ -504,7 +507,7 @@ const registrarRostro = (alumno) => {
   setRostroRegistrado(null);
 
   fetch(
-    `http://127.0.0.1:8000/alumnos/${alumno.id}/registrar-rostro-maestro`,
+    `https://asistencia-facial-modular.onrender.com/alumnos/${alumno.id}/registrar-rostro-maestro`,
     {
       method: "POST"
     }
@@ -556,7 +559,7 @@ const abrirCamaraAlumno = async () => {
 
     // Limpiar las fotografías anteriores
     const response = await fetch(
-      `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
+      `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
       {
         method: "POST"
       }
@@ -625,7 +628,7 @@ const enviarFoto = () => {
   }
 
   fetch(
-    `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/subir-rostro`,
+    `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/subir-rostro`,
     {
       method: "POST",
       headers: {
@@ -681,7 +684,7 @@ const registrarRostroAutomatico = async () => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/subir-rostro`,
+        `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/subir-rostro`,
         {
           method: "POST",
           headers: {
@@ -717,7 +720,7 @@ const registrarRostroAutomatico = async () => {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/registrar-rostro`,
+      `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/registrar-rostro`,
       {
         method: "POST"
       }
@@ -774,7 +777,7 @@ const eliminarAlumno = async (alumno) => {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:8000/alumnos/${alumno.id}`,
+      `https://asistencia-facial-modular.onrender.com/alumnos/${alumno.id}`,
       {
         method: "DELETE"
       }
