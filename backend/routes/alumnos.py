@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, Form
 from backend.database import conectar
 
 import subprocess
@@ -6,6 +6,9 @@ import sys
 import os
 import shutil
 import base64
+import csv
+import io
+from openpyxl import load_workbook
 
 router = APIRouter()
 
@@ -617,3 +620,192 @@ def registrar_rostro_maestro(alumno_id: int):
             "mensaje": "No se pudo completar el registro facial",
             "detalle": str(error)
         }
+
+@router.post("/alumnos/importar")
+async def importar_alumnos(
+    archivo: UploadFile = File(...),
+    grupo_id: int = Form(...),
+    maestro_id: int = Form(...)
+):
+    nombre_archivo = archivo.filename.lower()
+
+    if not nombre_archivo.endswith((".xlsx", ".csv")):
+        return {
+            "ok": False,
+            "mensaje": "El archivo debe ser Excel (.xlsx) o CSV (.csv)"
+        }
+
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    # Verificar que el grupo pertenezca al maestro
+    cursor.execute("""
+        SELECT id, nombre
+        FROM grupos
+        WHERE id = ?
+        AND maestro_id = ?
+    """, (
+        grupo_id,
+        maestro_id
+    ))
+
+    grupo = cursor.fetchone()
+
+    if not grupo:
+        conexion.close()
+        return {
+            "ok": False,
+            "mensaje": "El grupo seleccionado no pertenece a este maestro"
+        }
+
+    try:
+        contenido = await archivo.read()
+        filas = []
+
+        # Leer Excel
+        if nombre_archivo.endswith(".xlsx"):
+            libro = load_workbook(
+                filename=io.BytesIO(contenido),
+                read_only=True,
+                data_only=True
+            )
+
+            hoja = libro.active
+
+            for fila in hoja.iter_rows(
+                min_row=2,
+                values_only=True
+            ):
+                if len(fila) >= 2:
+                    filas.append((fila[0], fila[1]))
+
+            libro.close()
+
+        # Leer CSV
+        else:
+            texto = contenido.decode("utf-8-sig")
+            lector = csv.reader(io.StringIO(texto))
+
+            # Saltar encabezados
+            next(lector, None)
+
+            for fila in lector:
+                if len(fila) >= 2:
+                    filas.append((fila[0], fila[1]))
+
+        creados = 0
+        inscritos = 0
+        omitidos = 0
+        errores = []
+
+        for numero_fila, fila in enumerate(filas, start=2):
+
+            nombre = str(fila[0] or "").strip()
+            matricula = str(fila[1] or "").strip()
+
+            # Excel puede convertir algunos números a 12345.0
+            if matricula.endswith(".0"):
+                matricula = matricula[:-2]
+
+            if not nombre or not matricula:
+                errores.append(
+                    f"Fila {numero_fila}: nombre o matrícula vacíos"
+                )
+                continue
+
+            # Buscar si el alumno ya existe
+            cursor.execute("""
+                SELECT id
+                FROM alumnos
+                WHERE matricula = ?
+            """, (matricula,))
+
+            alumno = cursor.fetchone()
+
+            if alumno:
+                alumno_id = alumno["id"]
+
+                # Revisar si ya pertenece al grupo
+                cursor.execute("""
+                    SELECT id
+                    FROM inscripciones
+                    WHERE alumno_id = ?
+                    AND grupo_id = ?
+                """, (
+                    alumno_id,
+                    grupo_id
+                ))
+
+                if cursor.fetchone():
+                    omitidos += 1
+                    continue
+
+                # Alumno existente, nueva inscripción
+                cursor.execute("""
+                    INSERT INTO inscripciones (
+                        alumno_id,
+                        grupo_id
+                    )
+                    VALUES (?, ?)
+                """, (
+                    alumno_id,
+                    grupo_id
+                ))
+
+                inscritos += 1
+
+            else:
+                # Crear alumno nuevo
+                cursor.execute("""
+                    INSERT INTO alumnos (
+                        nombre,
+                        matricula,
+                        grupo,
+                        grupo_id
+                    )
+                    VALUES (?, ?, ?, ?)
+                """, (
+                    nombre,
+                    matricula,
+                    grupo["nombre"],
+                    grupo_id
+                ))
+
+                alumno_id = cursor.lastrowid
+
+                # Inscribirlo en el grupo seleccionado
+                cursor.execute("""
+                    INSERT INTO inscripciones (
+                        alumno_id,
+                        grupo_id
+                    )
+                    VALUES (?, ?)
+                """, (
+                    alumno_id,
+                    grupo_id
+                ))
+
+                creados += 1
+
+        conexion.commit()
+        conexion.close()
+
+        return {
+            "ok": True,
+            "mensaje": "Importación completada",
+            "creados": creados,
+            "inscritos": inscritos,
+            "omitidos": omitidos,
+            "errores": errores
+        }
+
+    except Exception as error:
+        conexion.rollback()
+        conexion.close()
+
+        return {
+            "ok": False,
+            "mensaje": "No se pudo importar el archivo",
+            "detalle": str(error)
+        }
+    

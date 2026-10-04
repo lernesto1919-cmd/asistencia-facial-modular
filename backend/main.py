@@ -17,6 +17,10 @@ from backend.models.maestros import crear_tabla_maestros
 
 from backend.models.inscripciones import crear_tabla_inscripciones
 
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+import io
+
 app = FastAPI()
 
 app.add_middleware(
@@ -296,3 +300,89 @@ def obtener_asistencias_por_grupo(grupo_id: int):
         dict(asistencia)
         for asistencia in asistencias
     ]
+
+@app.get("/grupos/{grupo_id}/asistencias/exportar")
+def exportar_asistencias_grupo(grupo_id: int):
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    # Obtener información del grupo
+    cursor.execute("""
+        SELECT nombre, materia
+        FROM grupos
+        WHERE id = ?
+    """, (grupo_id,))
+
+    grupo = cursor.fetchone()
+
+    if not grupo:
+        conexion.close()
+        return {
+            "ok": False,
+            "mensaje": "El grupo no existe"
+        }
+
+    # Obtener asistencias del grupo
+    cursor.execute("""
+        SELECT
+            alumnos.nombre,
+            alumnos.matricula,
+            asistencias.fecha,
+            asistencias.hora
+        FROM asistencias
+        INNER JOIN alumnos
+            ON asistencias.alumno_id = alumnos.id
+        WHERE asistencias.grupo_id = ?
+        ORDER BY asistencias.fecha DESC, asistencias.hora ASC
+    """, (grupo_id,))
+
+    asistencias = cursor.fetchall()
+    conexion.close()
+
+    # Crear Excel
+    libro = Workbook()
+    hoja = libro.active
+    hoja.title = "Asistencias"
+
+    # Encabezados
+    hoja.append([
+        "Nombre",
+        "Matrícula",
+        "Fecha",
+        "Hora"
+    ])
+
+    # Agregar registros
+    for asistencia in asistencias:
+        hoja.append([
+            asistencia["nombre"],
+            asistencia["matricula"],
+            asistencia["fecha"],
+            asistencia["hora"]
+        ])
+
+    # Ajustar ancho de columnas
+    hoja.column_dimensions["A"].width = 30
+    hoja.column_dimensions["B"].width = 18
+    hoja.column_dimensions["C"].width = 15
+    hoja.column_dimensions["D"].width = 15
+
+    # Guardar Excel en memoria
+    archivo = io.BytesIO()
+    libro.save(archivo)
+    archivo.seek(0)
+
+    nombre_grupo = str(grupo["nombre"]).replace(" ", "_")
+    nombre_archivo = f"asistencias_{nombre_grupo}.xlsx"
+
+    return StreamingResponse(
+        archivo,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+        headers={
+            "Content-Disposition":
+                f'attachment; filename="{nombre_archivo}"'
+        }
+    )

@@ -74,6 +74,11 @@ function App() {
     grupo_id: ""
   });
 
+  const [archivoImportacion, setArchivoImportacion] = useState(null);
+  const [grupoImportacion, setGrupoImportacion] = useState("");
+  const [importandoAlumnos, setImportandoAlumnos] = useState(false);
+  const [resultadoImportacion, setResultadoImportacion] = useState(null);
+
   const [formGrupo, setFormGrupo] = useState({
     nombre: "",
     materia: "",
@@ -86,24 +91,24 @@ function App() {
   const cargarDatos = (maestroId = usuario?.id) => {
     if (!maestroId) return;
 
-    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/estadisticas`)
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/estadisticas`)
       .then(response => response.json())
       .then(data => setEstadisticas(data));
 
-    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/alumnos`)
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/alumnos`)
       .then(response => response.json())
       .then(data => setAlumnos(data));
 
-    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/asistencias`)
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/asistencias`)
       .then(response => response.json())
       .then(data => setAsistencias(data));
 
-    fetch(`http://192.168.50.209:8000/maestros/${maestroId}/grupos`)
+    fetch(`http://127.0.0.1:8000/maestros/${maestroId}/grupos`)
       .then(response => response.json())
       .then(data => {
         setGrupos(data);
 
-        fetch("http://192.168.50.209:8000/grupo-activo")
+        fetch("http://127.0.0.1:8000/grupo-activo")
           .then(response => response.json())
           .then(activo => {
             setGrupoActivo(activo.grupo_id);
@@ -129,10 +134,63 @@ useEffect(() => {
   }
 }, [usuario]);
 
+  const importarAlumnos = async (e) => {
+    e.preventDefault();
+
+    if (!archivoImportacion) {
+      alert("Selecciona un archivo Excel o CSV");
+      return;
+    }
+
+    if (!grupoImportacion) {
+      alert("Selecciona un grupo");
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("archivo", archivoImportacion);
+    formData.append("grupo_id", grupoImportacion);
+    formData.append("maestro_id", usuario.id);
+
+    try {
+      setImportandoAlumnos(true);
+      setResultadoImportacion(null);
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/alumnos/importar",
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        alert(data.mensaje);
+        return;
+      }
+
+      setResultadoImportacion(data);
+
+      setArchivoImportacion(null);
+      setGrupoImportacion("");
+
+      cargarDatos(usuario.id);
+
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo importar el archivo");
+    } finally {
+      setImportandoAlumnos(false);
+    }
+  };
+
   const registrarAlumno = (e) => {
     e.preventDefault();
 
-    fetch("http://192.168.50.209:8000/alumnos", {
+    fetch("http://127.0.0.1:8000/alumnos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -168,7 +226,7 @@ useEffect(() => {
   const registrarGrupo = (e) => {
     e.preventDefault();
 
-    fetch("http://192.168.50.209:8000/grupos", {
+    fetch("http://127.0.0.1:8000/grupos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -214,7 +272,7 @@ useEffect(() => {
 
     try {
       const response = await fetch(
-        `http://192.168.50.209:8000/grupos/${grupo.id}`,
+        `http://127.0.0.1:8000/grupos/${grupo.id}`,
         {
           method: "DELETE"
         }
@@ -238,7 +296,7 @@ useEffect(() => {
   const iniciarAsistencia = (e) => {
     e.preventDefault();
 
-    fetch("http://192.168.50.209:8000/iniciar-asistencia", {
+    fetch("http://127.0.0.1:8000/iniciar-asistencia", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -259,7 +317,7 @@ useEffect(() => {
   
   const finalizarAsistencia = () => {
 
-  fetch("http://192.168.50.209:8000/finalizar-asistencia", {
+  fetch("http://127.0.0.1:8000/finalizar-asistencia", {
     method: "POST"
     })
     .then(response => response.json())
@@ -277,7 +335,7 @@ useEffect(() => {
     if (!grupoConsulta) return;
 
     fetch(
-      `http://192.168.50.209:8000/grupos/${grupoConsulta}/asistencias`
+      `http://127.0.0.1:8000/grupos/${grupoConsulta}/asistencias`
     )
      .then(response => response.json())
       .then(data => {
@@ -286,10 +344,22 @@ useEffect(() => {
 
   };
 
+  const exportarAsistencias = () => {
+    if (!grupoConsulta) {
+      alert("Selecciona un grupo");
+      return;
+    }
+
+    window.open(
+      `http://127.0.0.1:8000/grupos/${grupoConsulta}/asistencias/exportar`,
+      "_blank"
+    );
+  };
+
   const consultarAlumnosGrupo = () => {
     if (!grupoAlumnosConsulta) return;
 
-    fetch(`http://192.168.50.209:8000/grupos/${grupoAlumnosConsulta}/alumnos`)
+    fetch(`http://127.0.0.1:8000/grupos/${grupoAlumnosConsulta}/alumnos`)
       .then(response => response.json())
       .then(data => {
         setAlumnosGrupo(data);
@@ -299,7 +369,7 @@ useEffect(() => {
   const iniciarSesion = (e) => {
     e.preventDefault();
 
-    fetch("http://192.168.50.209:8000/login", {
+    fetch("http://127.0.0.1:8000/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -335,7 +405,7 @@ useEffect(() => {
       return;
     }
 
-    fetch("http://192.168.50.209:8000/maestros", {
+    fetch("http://127.0.0.1:8000/maestros", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -379,7 +449,7 @@ useEffect(() => {
 
     setMensajeAlumno("");
 
-    fetch("http://192.168.50.209:8000/alumnos/unirse-clase", {
+    fetch("http://127.0.0.1:8000/alumnos/unirse-clase", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -434,7 +504,7 @@ const registrarRostro = (alumno) => {
   setRostroRegistrado(null);
 
   fetch(
-    `http://192.168.50.209:8000/alumnos/${alumno.id}/registrar-rostro-maestro`,
+    `http://127.0.0.1:8000/alumnos/${alumno.id}/registrar-rostro-maestro`,
     {
       method: "POST"
     }
@@ -486,7 +556,7 @@ const abrirCamaraAlumno = async () => {
 
     // Limpiar las fotografías anteriores
     const response = await fetch(
-      `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
+      `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
       {
         method: "POST"
       }
@@ -555,7 +625,7 @@ const enviarFoto = () => {
   }
 
   fetch(
-    `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/subir-rostro`,
+    `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/subir-rostro`,
     {
       method: "POST",
       headers: {
@@ -611,7 +681,7 @@ const registrarRostroAutomatico = async () => {
 
     try {
       const response = await fetch(
-        `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/subir-rostro`,
+        `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/subir-rostro`,
         {
           method: "POST",
           headers: {
@@ -647,7 +717,7 @@ const registrarRostroAutomatico = async () => {
 
   try {
     const response = await fetch(
-      `http://192.168.50.209:8000/alumnos/${alumnoActual.id}/registrar-rostro`,
+      `http://127.0.0.1:8000/alumnos/${alumnoActual.id}/registrar-rostro`,
       {
         method: "POST"
       }
@@ -704,7 +774,7 @@ const eliminarAlumno = async (alumno) => {
 
   try {
     const response = await fetch(
-      `http://192.168.50.209:8000/alumnos/${alumno.id}`,
+      `http://127.0.0.1:8000/alumnos/${alumno.id}`,
       {
         method: "DELETE"
       }
@@ -1309,6 +1379,75 @@ const eliminarAlumno = async (alumno) => {
             <button type="submit">Guardar alumno</button>
           </form>
         </div>
+        <div className="seccion">
+          <h2>Importar alumnos desde Excel/CSV</h2>
+
+          <p>
+            Selecciona el grupo y carga un archivo con las columnas
+            <strong> Nombre</strong> y <strong>Matrícula</strong>.
+          </p>
+
+          <form className="formulario" onSubmit={importarAlumnos}>
+
+            <select
+              value={grupoImportacion}
+              onChange={(e) => setGrupoImportacion(e.target.value)}
+            >
+              <option value="">Selecciona un grupo</option>
+
+              {grupos.map(grupo => (
+                <option key={grupo.id} value={grupo.id}>
+                  {grupo.materia} - {grupo.nombre}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="file"
+              accept=".xlsx,.csv"
+              onChange={(e) =>
+                setArchivoImportacion(e.target.files[0] || null)
+              }
+            />
+
+            <button
+              type="submit"
+              disabled={importandoAlumnos}
+            >
+              {importandoAlumnos
+                ? "⏳ Importando..."
+                : "📄 Importar alumnos"}
+            </button>
+
+          </form>
+
+          {resultadoImportacion && (
+            <div>
+              <p><strong>✅ Importación completada</strong></p>
+
+              <p>
+                Nuevos alumnos: {resultadoImportacion.creados}
+                {" | "}
+                Existentes inscritos: {resultadoImportacion.inscritos}
+                {" | "}
+                Omitidos: {resultadoImportacion.omitidos}
+              </p>
+
+              {resultadoImportacion.errores?.length > 0 && (
+                <div>
+                  <strong>Errores:</strong>
+
+                  <ul>
+                    {resultadoImportacion.errores.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
 
 
         <div className="seccion">
@@ -1536,6 +1675,12 @@ const eliminarAlumno = async (alumno) => {
           >
             Consultar
           </button>
+          <button
+            type="button"
+            onClick={exportarAsistencias}
+          >
+            📥 Exportar Excel
+          </button>
 
           <table>
             <thead>
@@ -1603,3 +1748,4 @@ const eliminarAlumno = async (alumno) => {
 }
 
 export default App;
+
