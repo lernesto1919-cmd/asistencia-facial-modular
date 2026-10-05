@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
+import udgLogo from "./assets/udg-logo.jpg";
+
+const API_URL =
+  window.location.hostname === "localhost"
+    ? "http://127.0.0.1:8000"
+    : "https://asistencia-facial-modular.onrender.com";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -91,24 +97,24 @@ function App() {
   const cargarDatos = (maestroId = usuario?.id) => {
     if (!maestroId) return;
 
-    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/estadisticas`)
+    fetch(`${API_URL}/maestros/${maestroId}/estadisticas`)
       .then(response => response.json())
       .then(data => setEstadisticas(data));
 
-    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/alumnos`)
+    fetch(`${API_URL}/maestros/${maestroId}/alumnos`)
       .then(response => response.json())
       .then(data => setAlumnos(data));
 
-    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/asistencias`)
+    fetch(`${API_URL}/maestros/${maestroId}/asistencias`)
       .then(response => response.json())
       .then(data => setAsistencias(data));
 
-    fetch(`https://asistencia-facial-modular.onrender.com/maestros/${maestroId}/grupos`)
+    fetch(`${API_URL}/maestros/${maestroId}/grupos`)
       .then(response => response.json())
       .then(data => {
         setGrupos(data);
 
-        fetch("https://asistencia-facial-modular.onrender.com/grupo-activo")
+        fetch(`${API_URL}/grupo-activo`)
           .then(response => response.json())
           .then(activo => {
             setGrupoActivo(activo.grupo_id);
@@ -296,7 +302,7 @@ useEffect(() => {
   const iniciarAsistencia = (e) => {
     e.preventDefault();
 
-    fetch("https://asistencia-facial-modular.onrender.com/iniciar-asistencia", {
+    fetch(`${API_URL}/iniciar-asistencia`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -317,16 +323,16 @@ useEffect(() => {
   
   const finalizarAsistencia = () => {
 
-  fetch("https://asistencia-facial-modular.onrender.com/finalizar-asistencia", {
-    method: "POST"
+    fetch(`${API_URL}/finalizar-asistencia`, {
+      method: "POST"
     })
-    .then(response => response.json())
-    .then(data => {
-      setMensajeAsistencia(data.mensaje);
-      setGrupoSeleccionado("");
+      .then(response => response.json())
+      .then(data => {
+        setMensajeAsistencia(data.mensaje);
+        setGrupoSeleccionado("");
 
-      cargarDatos();
-    });
+        cargarDatos();
+      });
 
   };
 
@@ -805,27 +811,45 @@ const eliminarAlumno = async (alumno) => {
     return (
       <div className="contenedor">
         <div className="seccion">
+
+          <div className="login-encabezado">
+            <img
+              src={udgLogo}
+              alt="Universidad de Guadalajara"
+              className="login-logo"
+            />
+
+            <div className="login-linea"></div>
+
+            <h1>Sistema de Asistencia Facial</h1>
+            <p>Control de asistencia para profesores y alumnos</p>
+          </div>
+
           <div className="selector-acceso">
+
             <button
               type="button"
+              className={tipoAcceso === "maestro" ? "activo" : ""}
               onClick={() => {
                 setTipoAcceso("maestro");
                 setMensajeAlumno("");
               }}
             >
-              👨‍🏫 Maestro
+              Maestro
             </button>
 
             <button
               type="button"
+              className={tipoAcceso === "alumno" ? "activo" : ""}
               onClick={() => {
                 setTipoAcceso("alumno");
                 setErrorLogin("");
                 setModoRegistro(false);
               }}
             >
-              🎓 Alumno
+              Alumno
             </button>
+
           </div>
 
           {tipoAcceso === "alumno" ? (
@@ -1047,17 +1071,67 @@ const eliminarAlumno = async (alumno) => {
     <div className="app-layout">
 
       <aside className="sidebar">
-        <h2>Asistencia Facial</h2>
 
-        <button onClick={() => setPantalla("dashboard")}>📊 Dashboard</button>
-        <button onClick={() => setPantalla("grupos")}> 👥 Grupos</button>
-        <button onClick={() => setPantalla("alumnos")}>🎓 Alumnos</button>
-        <button onClick={() => setPantalla("asistencia")}>📷 Tomar asistencia</button>
-        <button onClick={() => setPantalla("reportes")}>📋 Reportes</button>
+        <div className="sidebar-marca">
+          <div className="sidebar-logo">AF</div>
 
-        <button className="logout" onClick={() => setUsuario(null)}>
-          Cerrar sesión
-        </button>
+          <div>
+            <h2>Asistencia Facial</h2>
+            <span>Panel del profesor</span>
+          </div>
+        </div>
+
+        <nav className="sidebar-menu">
+
+          <button
+            className={pantalla === "dashboard" ? "activo" : ""}
+            onClick={() => setPantalla("dashboard")}
+          >
+            Dashboard
+          </button>
+
+          <button
+            className={pantalla === "grupos" ? "activo" : ""}
+            onClick={() => setPantalla("grupos")}
+          >
+            Grupos
+          </button>
+
+          <button
+            className={pantalla === "alumnos" ? "activo" : ""}
+            onClick={() => setPantalla("alumnos")}
+          >
+            Alumnos
+          </button>
+
+          <button
+            className={pantalla === "asistencia" ? "activo" : ""}
+            onClick={() => setPantalla("asistencia")}
+          >
+            Tomar asistencia
+          </button>
+
+          <button
+            className={pantalla === "reportes" ? "activo" : ""}
+            onClick={() => setPantalla("reportes")}
+          >
+            Reportes
+          </button>
+
+        </nav>
+
+        <div className="sidebar-usuario">
+          <span>Sesión iniciada como</span>
+          <strong>{usuario.nombre}</strong>
+
+          <button
+            className="logout"
+            onClick={() => setUsuario(null)}
+          >
+            Cerrar sesión
+          </button>
+        </div>
+
       </aside>
 
     <main className="contenido">
