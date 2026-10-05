@@ -9,6 +9,7 @@ import base64
 import csv
 import io
 from openpyxl import load_workbook
+import zipfile
 
 router = APIRouter()
 
@@ -511,6 +512,74 @@ def subir_rostro(alumno_id: int, data: dict):
         "mensaje": "Imagen guardada",
         "numero": cantidad + 1
     }
+
+@router.get("/alumnos/{alumno_id}/descargar-rostros")
+def descargar_rostros(alumno_id: int):
+    from fastapi.responses import StreamingResponse
+
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT nombre
+        FROM alumnos
+        WHERE id = ?
+    """, (alumno_id,))
+
+    alumno = cursor.fetchone()
+    conexion.close()
+
+    if not alumno:
+        return {
+            "ok": False,
+            "mensaje": "Alumno no encontrado"
+        }
+
+    nombre = alumno["nombre"]
+
+    carpeta = os.path.join(
+        "ia",
+        "dataset",
+        nombre
+    )
+
+    if not os.path.exists(carpeta):
+        return {
+            "ok": False,
+            "mensaje": "El alumno no tiene imágenes guardadas"
+        }
+
+    imagenes = [
+        archivo
+        for archivo in os.listdir(carpeta)
+        if archivo.lower().endswith(".jpg")
+    ]
+
+    if not imagenes:
+        return {
+            "ok": False,
+            "mensaje": "El alumno no tiene imágenes guardadas"
+        }
+
+    memoria = io.BytesIO()
+
+    with zipfile.ZipFile(memoria, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for imagen in imagenes:
+            ruta = os.path.join(carpeta, imagen)
+            zipf.write(ruta, arcname=imagen)
+
+    memoria.seek(0)
+
+    nombre_zip = nombre.replace(" ", "_")
+
+    return StreamingResponse(
+        memoria,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition":
+            f'attachment; filename="{nombre_zip}_rostros.zip"'
+        }
+    )
 
 @router.post("/alumnos/{alumno_id}/preparar-registro-rostro")
 def preparar_registro_rostro(alumno_id: int):
