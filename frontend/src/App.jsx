@@ -164,7 +164,7 @@ useEffect(() => {
       setResultadoImportacion(null);
 
       const response = await fetch(
-        "https://asistencia-facial-modular.onrender.com/alumnos/importar",
+        `${API_URL}/alumnos/importar`,
         {
           method: "POST",
           body: formData
@@ -196,7 +196,7 @@ useEffect(() => {
   const registrarAlumno = (e) => {
     e.preventDefault();
 
-    fetch("https://asistencia-facial-modular.onrender.com/alumnos", {
+    fetch(`${API_URL}/alumnos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -232,7 +232,7 @@ useEffect(() => {
   const registrarGrupo = (e) => {
     e.preventDefault();
 
-    fetch("https://asistencia-facial-modular.onrender.com/grupos", {
+    fetch(`${API_URL}/grupos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -278,7 +278,7 @@ useEffect(() => {
 
     try {
       const response = await fetch(
-        `https://asistencia-facial-modular.onrender.com/grupos/${grupo.id}`,
+        `${API_URL}/grupos/${grupo.id}`,
         {
           method: "DELETE"
         }
@@ -341,7 +341,7 @@ useEffect(() => {
     if (!grupoConsulta) return;
 
     fetch(
-      `https://asistencia-facial-modular.onrender.com/grupos/${grupoConsulta}/asistencias`
+      `${API_URL}/grupos/${grupoConsulta}/asistencias`
     )
      .then(response => response.json())
       .then(data => {
@@ -357,7 +357,7 @@ useEffect(() => {
     }
 
     window.open(
-      `https://asistencia-facial-modular.onrender.com/grupos/${grupoConsulta}/asistencias/exportar`,
+      `${API_URL}/grupos/${grupoConsulta}/asistencias/exportar`,
       "_blank"
     );
   };
@@ -365,7 +365,7 @@ useEffect(() => {
   const consultarAlumnosGrupo = () => {
     if (!grupoAlumnosConsulta) return;
 
-    fetch(`https://asistencia-facial-modular.onrender.com/grupos/${grupoAlumnosConsulta}/alumnos`)
+   fetch(`${API_URL}/grupos/${grupoAlumnosConsulta}/alumnos`)
       .then(response => response.json())
       .then(data => {
         setAlumnosGrupo(data);
@@ -375,7 +375,7 @@ useEffect(() => {
   const iniciarSesion = (e) => {
     e.preventDefault();
 
-    fetch("https://asistencia-facial-modular.onrender.com/login", {
+    fetch(`${API_URL}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -411,7 +411,7 @@ useEffect(() => {
       return;
     }
 
-    fetch("https://asistencia-facial-modular.onrender.com/maestros", {
+    fetch(`${API_URL}/maestros`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -455,7 +455,7 @@ useEffect(() => {
 
     setMensajeAlumno("");
 
-    fetch("https://asistencia-facial-modular.onrender.com/alumnos/unirse-clase", {
+    fetch(`${API_URL}/alumnos/unirse-clase`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -491,20 +491,23 @@ useEffect(() => {
       });
   };
 
-  const buscarAlumno = () => {
+  
+const buscarAlumno = () => {
+  const texto = busquedaAlumno.trim().toLowerCase();
 
-    const resultado = alumnos.filter(alumno =>
-      alumno.nombre
-        .toLowerCase()
-        .includes(busquedaAlumno.toLowerCase())
-      ||
-      alumno.matricula
-        .toString()
-        .includes(busquedaAlumno)
-    );
-    setResultadoBusqueda(resultado);
+  if (texto === "") {
+    setResultadoBusqueda([]);
+    return;
+  }
 
-  };
+  const resultado = alumnos.filter(alumno =>
+    alumno.nombre.toLowerCase().includes(texto) ||
+    alumno.matricula.toString().includes(texto)
+  );
+
+  setResultadoBusqueda(resultado);
+};
+
 
 
 const registrarRostro = (alumno) => {
@@ -513,7 +516,7 @@ const registrarRostro = (alumno) => {
   setRostroRegistrado(null);
 
   fetch(
-    `https://asistencia-facial-modular.onrender.com/alumnos/${alumno.id}/registrar-rostro-maestro`,
+    `${API_URL}/alumnos/${alumno.id}/registrar-rostro-maestro`,
     {
       method: "POST"
     }
@@ -565,7 +568,7 @@ const abrirCamaraAlumno = async () => {
 
     // Limpiar las fotografías anteriores
     const response = await fetch(
-      `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
+      `${API_URL}/alumnos/${alumnoActual.id}/preparar-registro-rostro`,
       {
         method: "POST"
       }
@@ -634,7 +637,7 @@ const enviarFoto = () => {
   }
 
   fetch(
-    `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/subir-rostro`,
+    `${API_URL}/alumnos/${alumnoActual.id}/subir-rostro`,
     {
       method: "POST",
       headers: {
@@ -690,7 +693,7 @@ const registrarRostroAutomatico = async () => {
 
     try {
       const response = await fetch(
-        `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/subir-rostro`,
+        `${API_URL}/alumnos/${alumnoActual.id}/subir-rostro`,
         {
           method: "POST",
           headers: {
@@ -726,7 +729,7 @@ const registrarRostroAutomatico = async () => {
 
   try {
     const response = await fetch(
-      `https://asistencia-facial-modular.onrender.com/alumnos/${alumnoActual.id}/registrar-rostro`,
+      `${API_URL}/alumnos/${alumnoActual.id}/registrar-rostro`,
       {
         method: "POST"
       }
@@ -783,7 +786,7 @@ const eliminarAlumno = async (alumno) => {
 
   try {
     const response = await fetch(
-      `https://asistencia-facial-modular.onrender.com/alumnos/${alumno.id}`,
+      `${API_URL}/alumnos/${alumno.id}`,
       {
         method: "DELETE"
       }
@@ -1392,9 +1395,10 @@ const eliminarAlumno = async (alumno) => {
                   <td>
                     <button
                       type="button"
+                      className="btn-eliminar-grupo"
                       onClick={() => eliminarGrupo(grupo)}
                     >
-                      🗑️ Eliminar
+                      Eliminar
                     </button>
                   </td>
                 </tr>
@@ -1423,7 +1427,7 @@ const eliminarAlumno = async (alumno) => {
 
             <input
               type="text"
-              placeholder="Matrícula"
+              placeholder="Código"
               value={formulario.matricula}
               onChange={(e) =>
                 setFormulario({ ...formulario, matricula: e.target.value })
@@ -1448,7 +1452,7 @@ const eliminarAlumno = async (alumno) => {
 
               {grupos.map(grupo => (
                 <option key={grupo.id} value={grupo.id}>
-                  {grupo.nombre}
+                  {grupo.materia} - {grupo.nombre}
                 </option>
               ))}
             </select>
@@ -1461,7 +1465,7 @@ const eliminarAlumno = async (alumno) => {
 
           <p>
             Selecciona el grupo y carga un archivo con las columnas
-            <strong> Nombre</strong> y <strong>Matrícula</strong>.
+            <strong> Nombre</strong> y <strong>Código</strong>.
           </p>
 
           <form className="formulario" onSubmit={importarAlumnos}>
@@ -1492,8 +1496,8 @@ const eliminarAlumno = async (alumno) => {
               disabled={importandoAlumnos}
             >
               {importandoAlumnos
-                ? "⏳ Importando..."
-                : "📄 Importar alumnos"}
+                ? "Importando..."
+                : "Importar alumnos"}
             </button>
 
           </form>
@@ -1549,24 +1553,42 @@ const eliminarAlumno = async (alumno) => {
               <tr>
                 <th>ID</th>
                 <th>Nombre</th>
-                <th>Matrícula</th>
+                <th>Código</th>
                 <th>Grupo</th>
                 <th>Rostro</th>
               </tr>
             </thead>
 
             <tbody>
-              {resultadoBusqueda.map(alumno => (
-                <tr key={alumno.id}>
-                  <td>{alumno.id}</td>
-                  <td>{alumno.nombre}</td>
-                  <td>{alumno.matricula}</td>
-                  <td>{alumno.nombre_grupo || alumno.grupo}</td>
-                  <td>{alumno.rostro_registrado === 1
-                      ? "✅ Registrado"
-                      : "❌ No registrado"}</td>
-                </tr>
-              ))}
+              
+          {resultadoBusqueda.map(alumno => (
+            <tr key={alumno.id}>
+              <td>{alumno.id}</td>
+              <td>{alumno.nombre}</td>
+              <td>{alumno.matricula}</td>
+              <td>{alumno.nombre_grupo || alumno.grupo}</td>
+              <td>
+                {alumno.rostro_registrado === 1 ||
+                rostroRegistrado === alumno.id ? (
+                  <span className="estado-rostro registrado">
+                    Registrado
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="estado-rostro pendiente"
+                    disabled={registrandoRostro === alumno.id}
+                    onClick={() => registrarRostro(alumno)}
+                  >
+                    {registrandoRostro === alumno.id
+                      ? "Registrando..."
+                      : "Registrar rostro"}
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+
             </tbody>
           </table>
 
@@ -1597,7 +1619,7 @@ const eliminarAlumno = async (alumno) => {
               <tr>
                 <th>ID</th>
                 <th>Nombre</th>
-                <th>Matrícula</th>
+                <th>Código</th>
                 <th>Grupo</th>
               </tr>
             </thead>
@@ -1608,7 +1630,8 @@ const eliminarAlumno = async (alumno) => {
                   <td>{alumno.id}</td>
                   <td>{alumno.nombre}</td>
                   <td>{alumno.matricula}</td>
-                  <td>{alumno.grupo}</td>
+                  <td>{grupos.find(grupo => grupo.id === Number(grupoAlumnosConsulta))?.materia || "Sin grupo"}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1623,7 +1646,7 @@ const eliminarAlumno = async (alumno) => {
               <tr>
                 <th>ID</th>
                 <th>Nombre</th>
-                <th>Matrícula</th>
+                <th>Código</th>
                 <th>Grupo</th>
               </tr>
             </thead>
@@ -1636,9 +1659,10 @@ const eliminarAlumno = async (alumno) => {
                   <td>{alumno.matricula}</td>
                   <td>{alumno.nombre_grupo || alumno.grupo}</td>
 
-                  <td>
+                  <td className="acciones-alumno">
                     <button
                       type="button"
+                      className="btn-rostro"
                       disabled={
                         registrandoRostro === alumno.id ||
                         alumno.rostro_registrado === 1 ||
@@ -1647,18 +1671,19 @@ const eliminarAlumno = async (alumno) => {
                       onClick={() => registrarRostro(alumno)}
                     >
                       {registrandoRostro === alumno.id
-                        ? "⏳ Registrando..."
+                        ? "Registrando..."
                         : alumno.rostro_registrado === 1 ||
                           rostroRegistrado === alumno.id
-                        ? "✅ Rostro registrado"
-                        : "📷 Registrar rostro"}
+                        ? "Rostro registrado"
+                        : "Registrar rostro"}
                     </button>
 
                     <button
                       type="button"
+                      className="btn-eliminar-alumno"
                       onClick={() => eliminarAlumno(alumno)}
                     >
-                      🗑️ Eliminar
+                      Eliminar
                     </button>
                   </td>
                 </tr>
@@ -1672,98 +1697,117 @@ const eliminarAlumno = async (alumno) => {
         </>
       )}
 
+      
       {pantalla === "asistencia" && (
         <>
-        <div className="seccion">
-          <h2>Estado de asistencia</h2>
+          <div className="seccion">
+            <h2>Estado de asistencia</h2>
 
-          {grupoActivo ? (
-          <p>
-            🟢 Asistencia activa para el grupo:
-            {" "}
-            <strong>
-              {nombreGrupoActivo || grupoActivo}
-            </strong>
-          </p>
-          ) : (
-          <p>
-            🔴 No hay asistencia activa
-          </p>
-          )}
-        </div>
+            {grupoActivo ? (
+              <p className="estado-asistencia activo">
+                <span className="indicador-estado"></span>
+                Asistencia activa para:
+                <strong>
+                  {grupos.find(grupo => grupo.id === Number(grupoActivo))?.materia
+                    || nombreGrupoActivo
+                    || grupoActivo}
+                </strong>
+              </p>
+            ) : (
+              <p className="estado-asistencia inactivo">
+                <span className="indicador-estado"></span>
+                No hay asistencia activa
+              </p>
+            )}
+          </div>
 
-        <div className="seccion">
-          <h2>Tomar asistencia</h2>
+          <div className="seccion">
+            <h2>Tomar asistencia</h2>
 
-          <form className="formulario" onSubmit={iniciarAsistencia}>
-            <select
-              value={grupoSeleccionado}
-              onChange={(e) => setGrupoSeleccionado(e.target.value)}
+            <form
+              className="formulario formulario-asistencia"
+              onSubmit={iniciarAsistencia}
             >
-              <option value="">Selecciona un grupo</option>
+              <select
+                value={grupoSeleccionado}
+                onChange={(e) => setGrupoSeleccionado(e.target.value)}
+              >
+                <option value="">Selecciona una materia</option>
 
-              {grupos.map(grupo => (
-                <option key={grupo.id} value={grupo.id}>
-                  {grupo.nombre}
-                </option>
-              ))}
-            </select>
+                {grupos.map(grupo => (
+                  <option key={grupo.id} value={grupo.id}>
+                    {grupo.materia}
+                  </option>
+                ))}
+              </select>
 
-            <button type="submit">Iniciar asistencia</button>
-            <button type="button" onClick={finalizarAsistencia}>Finalizar asistencia</button>
-          </form>
+              <button
+                type="submit"
+                className="btn-iniciar-asistencia"
+              >
+                Iniciar asistencia
+              </button>
 
-          <p>{mensajeAsistencia}</p>
-        </div>
+              <button
+                type="button"
+                className="btn-finalizar-asistencia"
+                onClick={finalizarAsistencia}
+              >
+                Finalizar asistencia
+              </button>
+            </form>
 
-        
-         </>
+            <p>{mensajeAsistencia}</p>
+          </div>
+        </>
       )}
+
 
       {pantalla === "reportes" && (
         <>
 
         <div className="seccion">
 
-          <h2>Asistencias por grupo</h2>
+          
+        <h2>Asistencias por grupo</h2>
 
+        <div className="controles-reportes">
           <select
             value={grupoConsulta}
             onChange={(e) => setGrupoConsulta(e.target.value)}
           >
-
-            <option value="">
-              Selecciona un grupo
-            </option>
+            <option value="">Selecciona un grupo</option>
 
             {grupos.map(grupo => (
-              <option
-                key={grupo.id}
-                value={grupo.id}
-              >
-                {grupo.nombre}
+              <option key={grupo.id} value={grupo.id}>
+                {grupo.materia}
               </option>
             ))}
-
           </select>
 
           <button
+            type="button"
+            className="btn-consultar"
             onClick={consultarAsistenciasGrupo}
           >
             Consultar
           </button>
+
           <button
             type="button"
+            className="btn-exportar"
             onClick={exportarAsistencias}
           >
-            📥 Exportar Excel
+            Exportar Excel
           </button>
+        </div>
+
 
           <table>
             <thead>
               <tr>
                 <th>Alumno</th>
-                <th>Matrícula</th>
+                <th>Código</th>
                 <th>Fecha</th>
                 <th>Hora</th>
               </tr>
