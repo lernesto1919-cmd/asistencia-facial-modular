@@ -318,20 +318,29 @@ def obtener_alumnos_por_maestro(maestro_id: int):
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT DISTINCT
+        SELECT
+            alumnos.id,
+            alumnos.nombre,
+            alumnos.matricula,
+            alumnos.rostro_registrado,
+            GROUP_CONCAT(DISTINCT grupos.materia) AS nombre_grupo
+
+        FROM alumnos
+
+        INNER JOIN inscripciones
+            ON alumnos.id = inscripciones.alumno_id
+
+        INNER JOIN grupos
+            ON inscripciones.grupo_id = grupos.id
+
+        WHERE grupos.maestro_id = ?
+
+        GROUP BY
             alumnos.id,
             alumnos.nombre,
             alumnos.matricula,
             alumnos.rostro_registrado
-        FROM alumnos
 
-        INNER JOIN inscripciones
-        ON alumnos.id = inscripciones.alumno_id
-
-        INNER JOIN grupos
-        ON inscripciones.grupo_id = grupos.id
-
-        WHERE grupos.maestro_id = ?
         ORDER BY alumnos.nombre
     """, (maestro_id,))
 

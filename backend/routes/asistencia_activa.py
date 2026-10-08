@@ -1,19 +1,23 @@
+
 from fastapi import APIRouter
 import subprocess
 import sys
 
-proceso_reconocimiento = None
-
 router = APIRouter()
+
+proceso_reconocimiento = None
 
 grupo_activo = {
     "grupo_id": None
 }
 
+
 @router.post("/iniciar-asistencia")
 def iniciar_asistencia(data: dict):
+    global proceso_reconocimiento
 
     grupo_id = data.get("grupo_id")
+    modo = data.get("modo", "local")
 
     if not grupo_id:
         return {
@@ -21,13 +25,31 @@ def iniciar_asistencia(data: dict):
             "mensaje": "Debes seleccionar un grupo"
         }
 
-    # Guardar el grupo que actualmente está tomando asistencia
+    if modo not in ("local", "web"):
+        return {
+            "ok": False,
+            "mensaje": "Modo de asistencia no valido"
+        }
+
+    if grupo_activo["grupo_id"] is not None:
+        return {
+            "ok": False,
+            "mensaje": "Ya existe una asistencia activa"
+        }
+
     grupo_activo["grupo_id"] = grupo_id
 
-    try:
-        # Iniciar reconocimiento facial sin bloquear FastAPI
-        global proceso_reconocimiento
+    # Modo web: la camara se abrira desde React.
+    if modo == "web":
+        return {
+            "ok": True,
+            "mensaje": "Asistencia web iniciada",
+            "grupo_id": grupo_id,
+            "modo": "web"
+        }
 
+    # Modo local: conservar el funcionamiento anterior.
+    try:
         proceso_reconocimiento = subprocess.Popen([
             sys.executable,
             "ia/reconocer.py"
@@ -35,8 +57,9 @@ def iniciar_asistencia(data: dict):
 
         return {
             "ok": True,
-            "mensaje": "Asistencia iniciada",
-            "grupo_id": grupo_id
+            "mensaje": "Asistencia local iniciada",
+            "grupo_id": grupo_id,
+            "modo": "local"
         }
 
     except Exception as error:
@@ -51,17 +74,15 @@ def iniciar_asistencia(data: dict):
 
 @router.get("/grupo-activo")
 def obtener_grupo_activo():
-
     return grupo_activo
+
 
 @router.post("/finalizar-asistencia")
 def finalizar_asistencia():
     global proceso_reconocimiento
 
-    # Desactivar el grupo
     grupo_activo["grupo_id"] = None
 
-    # Cerrar el proceso de reconocimiento facial
     if proceso_reconocimiento is not None:
         if proceso_reconocimiento.poll() is None:
             proceso_reconocimiento.terminate()

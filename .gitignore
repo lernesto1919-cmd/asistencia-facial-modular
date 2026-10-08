@@ -1,0 +1,10 @@
+﻿# Datos privados
+ia/dataset/
+ia/modelo_lbph.xml
+
+# Bases de datos
+database/*.db
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc

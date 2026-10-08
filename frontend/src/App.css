@@ -917,3 +917,41 @@ button.estado-rostro.pendiente:disabled {
 .btn-eliminar-grupo:hover {
   background: #fee2e2;
 }
+
+.mensaje-reconocimiento {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  margin-top: 15px;
+  background: #f0fdf4;
+  border-left: 4px solid #16a34a;
+  border-radius: 8px;
+  color: #166534;
+  text-align: left;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.mensaje-reconocimiento strong {
+  font-size: 15px;
+}
+
+.mensaje-reconocimiento {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  margin-top: 15px;
+  background: #f0fdf4;
+  border-left: 4px solid #16a34a;
+  border-radius: 8px;
+  color: #166534;
+  text-align: left;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.mensaje-reconocimiento strong {
+  font-size: 15px;
+}

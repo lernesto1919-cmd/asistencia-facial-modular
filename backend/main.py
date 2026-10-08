@@ -21,6 +21,8 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 import io
 
+from backend.routes import reconocimiento_web
+
 app = FastAPI()
 
 app.add_middleware(
@@ -41,6 +43,7 @@ app.include_router(alumnos.router)
 app.include_router(grupos.router)
 app.include_router(asistencia_activa.router)
 app.include_router(maestros.router)
+app.include_router(reconocimiento_web.router)
 
 class Asistencia(BaseModel):
     alumno: str

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import udgLogo from "./assets/udg-logo.jpg";
 
+
 const API_URL =
   window.location.hostname === "localhost"
     ? "http://127.0.0.1:8000"
@@ -41,6 +42,8 @@ function App() {
   const [mostrarCamara, setMostrarCamara] = useState(false);
 
   const videoRef = useRef(null);
+  
+  
   const canvasRef = useRef(null);
   const [fotoCapturada, setFotoCapturada] = useState(null);
 
@@ -55,9 +58,12 @@ function App() {
 
   const [grupoSeleccionado, setGrupoSeleccionado] = useState("");
   const [mensajeAsistencia, setMensajeAsistencia] = useState("");
+  const [ultimoReconocido, setUltimoReconocido] = useState("");
 
   const [grupoActivo, setGrupoActivo] = useState(null);
   const [nombreGrupoActivo, setNombreGrupoActivo] = useState("");  
+  const [camaraActiva, setCamaraActiva] = useState(false);
+  const streamRef = useRef(null);
 
   const [asistenciasGrupo, setAsistenciasGrupo] = useState([]);
   const [grupoConsulta, setGrupoConsulta] = useState("");
@@ -132,6 +138,12 @@ function App() {
       });
   };
 
+
+useEffect(() => {
+  if (camaraActiva && videoRef.current && streamRef.current) {
+    videoRef.current.srcObject = streamRef.current;
+  }
+}, [camaraActiva]);
 
 
 useEffect(() => {
@@ -299,42 +311,241 @@ useEffect(() => {
     }
   };
 
-  const iniciarAsistencia = (e) => {
+  
+  
+  const iniciarAsistencia = async (e) => {
     e.preventDefault();
 
-    fetch(`${API_URL}/iniciar-asistencia`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        grupo_id: Number(grupoSeleccionado)
-      })
-    })
-      .then(response => response.json())
-      .then(data => {
-    setMensajeAsistencia(
-      `Asistencia iniciada para grupo ${data.grupo_id}`
-    );
+    let stream = null;
 
-    cargarDatos();
-  });
-  };
-  
-  const finalizarAsistencia = () => {
+    try {
+      if (!grupoSeleccionado) {
+        setMensajeAsistencia("Selecciona una materia.");
+        return;
+      }
 
-    fetch(`${API_URL}/finalizar-asistencia`, {
-      method: "POST"
-    })
-      .then(response => response.json())
-      .then(data => {
-        setMensajeAsistencia(data.mensaje);
-        setGrupoSeleccionado("");
-
-        cargarDatos();
+      // Solicitar permiso para utilizar la cámara.
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
       });
 
+      // Iniciar la asistencia web en FastAPI.
+      const response = await fetch(`${API_URL}/iniciar-asistencia`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          grupo_id: Number(grupoSeleccionado),
+          modo: "web"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo iniciar la asistencia");
+      }
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error(data.mensaje || "No se pudo iniciar la asistencia");
+      }
+
+      // Guardar la cámara para poder cerrarla después.
+      streamRef.current = stream;
+      setCamaraActiva(true);
+
+      setMensajeAsistencia(
+        `Asistencia iniciada para grupo ${data.grupo_id}`
+      );
+
+      cargarDatos();
+
+    } catch (error) {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      setMensajeAsistencia(error.message);
+    }
   };
+
+
+    
+  
+  const finalizarAsistencia = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/finalizar-asistencia`,
+        {
+          method: "POST"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("No se pudo finalizar la asistencia");
+      }
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error(data.mensaje || "Error al finalizar");
+      }
+
+      // Apagar la cámara del navegador
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+        });
+
+        streamRef.current = null;
+      }
+
+      // Limpiar el video
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+
+      // Ocultar la cámara
+      setCamaraActiva(false);
+
+      // Actualizar la interfaz
+      setMensajeAsistencia(data.mensaje);
+      setGrupoSeleccionado("");
+
+      cargarDatos();
+
+    } catch (error) {
+      setMensajeAsistencia(error.message);
+    }
+  };
+
+  
+    
+  const reconocerRostroWeb = async () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (!video || !canvas || video.readyState < 2) {
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const contexto = canvas.getContext("2d");
+
+    if (!contexto) return;
+
+    contexto.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    try {
+      // Esperar a que la imagen esté lista
+      const imagen = await new Promise((resolve) => {
+        canvas.toBlob(resolve, "image/jpeg", 0.8);
+      });
+
+      if (!imagen) return;
+
+      const formulario = new FormData();
+      formulario.append("imagen", imagen, "rostro.jpg");
+
+      const respuesta = await fetch(
+        `${API_URL}/reconocer-rostro-web`,
+        {
+          method: "POST",
+          body: formulario
+        }
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("Error al analizar el rostro");
+      }
+
+      const datos = await respuesta.json();
+
+      if (datos.reconocido) {
+        console.log("Alumno reconocido:", datos.alumno);
+
+        const respuestaRegistro = await fetch(
+          `${API_URL}/registrar`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              alumno: datos.alumno
+            })
+          }
+        );
+
+        if (!respuestaRegistro.ok) {
+          throw new Error("Error al registrar la asistencia");
+        }
+
+        const registro = await respuestaRegistro.json();
+
+        if (registro.error) {
+          console.error(
+            "Registro rechazado:",
+            registro.error
+          );
+        } else {
+          console.log(
+            "Resultado de asistencia:",
+            registro.mensaje
+          );
+
+          setUltimoReconocido(
+            `${datos.alumno} — ${registro.mensaje}`
+          );
+        }
+
+      } else {
+        console.log(datos.mensaje);
+      }
+
+    } catch (error) {
+      console.error("Error de reconocimiento:", error);
+    }
+  };
+
+
+  
+  useEffect(() => {
+    if (!camaraActiva) return;
+    console.log("Reconocimiento automático activado");
+
+    let procesando = false;
+    let cancelado = false;
+
+    const intervalo = setInterval(async () => {
+      if (procesando || cancelado) return;
+
+      console.log("Intentando reconocer rostro...");
+      procesando = true;
+
+      try {
+        await reconocerRostroWeb();
+      } finally {
+        procesando = false;
+      }
+    }, 2000);
+
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
+    };
+  }, [camaraActiva]);
+
 
   const consultarAsistenciasGrupo = () => {
 
@@ -930,6 +1141,10 @@ const eliminarAlumno = async (alumno) => {
                           maxWidth: "500px",
                           borderRadius: "10px"
                         }}
+                      />
+                      <canvas
+                        ref={canvasRef}
+                        style={{ display: "none" }}
                       />
                       <button
                         type="button"
@@ -1744,6 +1959,8 @@ const eliminarAlumno = async (alumno) => {
               <button
                 type="submit"
                 className="btn-iniciar-asistencia"
+                disabled={camaraActiva}
+
               >
                 Iniciar asistencia
               </button>
@@ -1752,12 +1969,53 @@ const eliminarAlumno = async (alumno) => {
                 type="button"
                 className="btn-finalizar-asistencia"
                 onClick={finalizarAsistencia}
+
               >
                 Finalizar asistencia
               </button>
+            
             </form>
 
+            
+            {camaraActiva && (
+              <div className="contenedor-camara">
+                <h3>Reconocimiento facial en tiempo real</h3>
+
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    width: "100%",
+                    maxWidth: "550px",
+                    borderRadius: "12px",
+                    backgroundColor: "#111"
+                  }}
+                />
+
+                <canvas
+                  ref={canvasRef}
+                  style={{ display: "none" }}
+                />
+
+                <p>
+                  {ultimoReconocido
+                    ? "Reconocimiento facial realizado"
+                    : "Cámara activa: esperando reconocimiento facial..."}
+                </p>
+                {ultimoReconocido && (
+                  <div className="mensaje-reconocimiento">
+                    <strong>Alumno reconocido</strong>
+                    <span>{ultimoReconocido}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+
             <p>{mensajeAsistencia}</p>
+
           </div>
         </>
       )}
